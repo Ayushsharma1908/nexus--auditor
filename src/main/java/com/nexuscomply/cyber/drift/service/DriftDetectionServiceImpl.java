@@ -2,7 +2,10 @@ package com.nexuscomply.cyber.drift.service;
 
 import com.nexuscomply.cyber.canonical.CanonicalSecurityModel;
 import com.nexuscomply.cyber.canonical.SourceMapEntry;
+import com.nexuscomply.cyber.compliance.GenericRuleEvaluator;
+import com.nexuscomply.cyber.compliance.RuleEvaluationResult;
 import com.nexuscomply.cyber.compliance.RuleRequirement;
+import com.nexuscomply.cyber.compliance.RuleResultStatus;
 import com.nexuscomply.cyber.compliance.model.ComplianceRule;
 import com.nexuscomply.cyber.compliance.persistence.ComplianceRuleDocument;
 import com.nexuscomply.cyber.compliance.persistence.ComplianceRuleRepository;
@@ -43,6 +46,7 @@ public class DriftDetectionServiceImpl implements DriftDetectionService {
     private final ComplianceRuleRepository ruleRepository;
     private final FindingRepository findingRepository;
     private final RiskCalculationService riskCalculationService;
+    private final GenericRuleEvaluator ruleEvaluator;
 
     public DriftDetectionServiceImpl(
             DriftEventRepository driftEventRepository,
@@ -50,11 +54,22 @@ public class DriftDetectionServiceImpl implements DriftDetectionService {
             ComplianceRuleRepository ruleRepository,
             FindingRepository findingRepository,
             RiskCalculationService riskCalculationService) {
+        this(driftEventRepository, normalizedConfigRepository, ruleRepository, findingRepository, riskCalculationService, new GenericRuleEvaluator());
+    }
+
+    public DriftDetectionServiceImpl(
+            DriftEventRepository driftEventRepository,
+            NormalizedConfigurationRepository normalizedConfigRepository,
+            ComplianceRuleRepository ruleRepository,
+            FindingRepository findingRepository,
+            RiskCalculationService riskCalculationService,
+            GenericRuleEvaluator ruleEvaluator) {
         this.driftEventRepository = driftEventRepository;
         this.normalizedConfigRepository = normalizedConfigRepository;
         this.ruleRepository = ruleRepository;
         this.findingRepository = findingRepository;
         this.riskCalculationService = riskCalculationService;
+        this.ruleEvaluator = ruleEvaluator != null ? ruleEvaluator : new GenericRuleEvaluator();
     }
 
     @Override
@@ -97,6 +112,9 @@ public class DriftDetectionServiceImpl implements DriftDetectionService {
         Set<String> affectedControlIds = new LinkedHashSet<>();
         Set<String> changedFieldPaths = new LinkedHashSet<>();
 
+        CanonicalSecurityModel canonBefore = beforeDoc.getCanonical() != null ? beforeDoc.getCanonical() : new CanonicalSecurityModel();
+        CanonicalSecurityModel canonAfter = afterDoc.getCanonical() != null ? afterDoc.getCanonical() : new CanonicalSecurityModel();
+
         int totalRiskBefore = 0;
         int totalRiskAfter = 0;
 
@@ -128,57 +146,105 @@ public class DriftDetectionServiceImpl implements DriftDetectionService {
             // Absolute Rule 5: Classify each change as IMPROVED, DEGRADED, or NO_SECURITY_IMPACT
             // If no rule exists, classify as UNKNOWN_IMPACT rather than guessing.
             String classification;
+            int fieldRiskBefore = 0;
+            int fieldRiskAfter = 0;
+
             if (applicableRules.isEmpty()) {
                 classification = DriftClassification.UNKNOWN_IMPACT.name();
             } else {
-                boolean hadViolationBefore = false;
-                boolean hasViolationAfter = false;
+                List<String> ruleClassifications = new ArrayList<>();
 
                 for (ComplianceRuleDocument ruleDoc : applicableRules) {
                     if (ruleDoc.getControlId() != null) {
                         affectedControlIds.add(ruleDoc.getControlId());
                     }
 
-                    boolean passBefore = evaluateRule(valBefore, ruleDoc.getExpression());
-                    boolean passAfter = evaluateRule(valAfter, ruleDoc.getExpression());
+                    ComplianceRule rule = toDomainRule(ruleDoc);
+                    RuleEvaluationResult resBefore = ruleEvaluator.evaluate(canonBefore, rule);
+                    RuleEvaluationResult resAfter = ruleEvaluator.evaluate(canonAfter, rule);
 
-                    if (!passBefore) hadViolationBefore = true;
-                    if (!passAfter) hasViolationAfter = true;
+                    RuleResultStatus sBefore = resBefore.getStatus();
+                    RuleResultStatus sAfter = resAfter.getStatus();
 
                     // Absolute Rule 4: Compute risk delta reusing RiskCalculationService on before & after states
-                    if (!passBefore) {
-                        totalRiskBefore += computeRiskForState(deviceId, beforeDoc.getConfigurationId(), fieldPath, valBefore, ruleDoc);
+                    // Risk per field = max over matching rules
+                    if (sBefore == RuleResultStatus.FAIL) {
+                        int rBefore = computeRiskForState(deviceId, beforeDoc.getConfigurationId(), fieldPath, valBefore, ruleDoc);
+                        fieldRiskBefore = Math.max(fieldRiskBefore, rBefore);
                     }
-                    if (!passAfter) {
-                        totalRiskAfter += computeRiskForState(deviceId, afterDoc.getConfigurationId(), fieldPath, valAfter, ruleDoc);
+                    if (sAfter == RuleResultStatus.FAIL) {
+                        int rAfter = computeRiskForState(deviceId, afterDoc.getConfigurationId(), fieldPath, valAfter, ruleDoc);
+                        fieldRiskAfter = Math.max(fieldRiskAfter, rAfter);
                     }
+
+                    // Rule transition classification:
+                    // FAIL->PASS IMPROVED; PASS->FAIL DEGRADED; UNKNOWN->FAIL DEGRADED;
+                    // UNKNOWN->PASS NO_SECURITY_IMPACT; FAIL->UNKNOWN UNKNOWN_IMPACT;
+                    // PASS->UNKNOWN UNKNOWN_IMPACT; no applicable rule UNKNOWN_IMPACT
+                    String ruleClass;
+                    if (sBefore == RuleResultStatus.FAIL && sAfter == RuleResultStatus.PASS) {
+                        ruleClass = DriftClassification.IMPROVED.name();
+                    } else if (sBefore == RuleResultStatus.PASS && sAfter == RuleResultStatus.FAIL) {
+                        ruleClass = DriftClassification.DEGRADED.name();
+                    } else if (sBefore == RuleResultStatus.UNKNOWN && sAfter == RuleResultStatus.FAIL) {
+                        ruleClass = DriftClassification.DEGRADED.name();
+                    } else if (sBefore == RuleResultStatus.UNKNOWN && sAfter == RuleResultStatus.PASS) {
+                        ruleClass = DriftClassification.NO_SECURITY_IMPACT.name();
+                    } else if (sBefore == RuleResultStatus.FAIL && sAfter == RuleResultStatus.UNKNOWN) {
+                        ruleClass = DriftClassification.UNKNOWN_IMPACT.name();
+                    } else if (sBefore == RuleResultStatus.PASS && sAfter == RuleResultStatus.UNKNOWN) {
+                        ruleClass = DriftClassification.UNKNOWN_IMPACT.name();
+                    } else {
+                        ruleClass = DriftClassification.NO_SECURITY_IMPACT.name();
+                    }
+                    ruleClassifications.add(ruleClass);
                 }
 
-                if (hadViolationBefore && !hasViolationAfter) {
-                    classification = DriftClassification.IMPROVED.name();
-                } else if (!hadViolationBefore && hasViolationAfter) {
+                if (ruleClassifications.contains(DriftClassification.DEGRADED.name())) {
                     classification = DriftClassification.DEGRADED.name();
+                } else if (ruleClassifications.contains(DriftClassification.IMPROVED.name())) {
+                    classification = DriftClassification.IMPROVED.name();
+                } else if (ruleClassifications.contains(DriftClassification.UNKNOWN_IMPACT.name())) {
+                    classification = DriftClassification.UNKNOWN_IMPACT.name();
                 } else {
                     classification = DriftClassification.NO_SECURITY_IMPACT.name();
                 }
             }
 
+            totalRiskBefore += fieldRiskBefore;
+            totalRiskAfter += fieldRiskAfter;
+
             changes.add(new DriftChange(fieldPath, valBefore, valAfter, changeType, sourceBefore, sourceAfter, classification));
         }
+
+        // Clamp event-level riskBefore and riskAfter to 0-100
+        totalRiskBefore = Math.min(100, Math.max(0, totalRiskBefore));
+        totalRiskAfter = Math.min(100, Math.max(0, totalRiskAfter));
 
         // Link existing findings for this device matching changed fields on the before configuration
         List<String> affectedFindingIds = resolveAffectedFindings(deviceId, beforeDoc.getConfigurationId(), changedFieldPaths);
 
-        // Overall Impact determination
+        // Overall Impact determination:
+        // risk up INCREASED; down DECREASED; equal with any UNKNOWN_IMPACT UNKNOWN;
+        // equal with both IMPROVED and DEGRADED MIXED; zero changes NO_CHANGE.
         String impact;
-        if (totalRiskAfter > totalRiskBefore) {
+        if (changes.isEmpty()) {
+            impact = "NO_CHANGE";
+        } else if (totalRiskAfter > totalRiskBefore) {
             impact = "INCREASED";
         } else if (totalRiskAfter < totalRiskBefore) {
             impact = "DECREASED";
         } else {
-            boolean hasDegraded = changes.stream().anyMatch(c -> DriftClassification.DEGRADED.name().equals(c.getClassification()));
+            // totalRiskAfter == totalRiskBefore
+            boolean hasUnknown = changes.stream().anyMatch(c -> DriftClassification.UNKNOWN_IMPACT.name().equals(c.getClassification()));
             boolean hasImproved = changes.stream().anyMatch(c -> DriftClassification.IMPROVED.name().equals(c.getClassification()));
-            if (hasDegraded) {
+            boolean hasDegraded = changes.stream().anyMatch(c -> DriftClassification.DEGRADED.name().equals(c.getClassification()));
+
+            if (hasUnknown) {
+                impact = "UNKNOWN";
+            } else if (hasImproved && hasDegraded) {
+                impact = "MIXED";
+            } else if (hasDegraded) {
                 impact = "INCREASED";
             } else if (hasImproved) {
                 impact = "DECREASED";
@@ -258,18 +324,27 @@ public class DriftDetectionServiceImpl implements DriftDetectionService {
         finding.setExpected(ruleDoc.getExpression() != null ? ruleDoc.getExpression().getExpectedValue() : null);
         finding.setActual(val);
 
-        ComplianceRule rule = new ComplianceRule();
-        rule.setId(ruleDoc.getId());
-        rule.setControlId(ruleDoc.getControlId());
-        rule.setRuleCode(ruleDoc.getRuleCode());
-        rule.setRequirement(ruleDoc.getExpression());
-        rule.setSeverity(ruleDoc.getSeverity());
-        rule.setApplicableVendors(ruleDoc.getApplicableVendors());
-        rule.setApplicablePlatforms(ruleDoc.getApplicablePlatforms());
+        ComplianceRule rule = toDomainRule(ruleDoc);
 
         RiskContext context = new RiskContext(1.0);
         RiskAssessment assessment = riskCalculationService.calculateRisk(finding, rule, context);
         return (int) Math.round(assessment.getScore());
+    }
+
+    private ComplianceRule toDomainRule(ComplianceRuleDocument doc) {
+        ComplianceRule rule = new ComplianceRule();
+        rule.setId(doc.getId());
+        rule.setControlId(doc.getControlId());
+        rule.setRuleCode(doc.getRuleCode());
+        rule.setName(doc.getName());
+        rule.setDescription(doc.getDescription());
+        rule.setRequirement(doc.getExpression());
+        rule.setSeverity(doc.getSeverity());
+        rule.setFrameworkIds(doc.getFrameworkIds());
+        rule.setApplicableVendors(doc.getApplicableVendors());
+        rule.setApplicablePlatforms(doc.getApplicablePlatforms());
+        rule.setApplicableOsVersions(doc.getApplicableOsVersions());
+        return rule;
     }
 
     private List<ComplianceRuleDocument> findApplicableRules(
@@ -297,36 +372,6 @@ public class DriftDetectionServiceImpl implements DriftDetectionService {
             matched.add(r);
         }
         return matched;
-    }
-
-    private boolean evaluateRule(Object actualVal, RuleRequirement requirement) {
-        if (requirement == null) return true;
-        String op = requirement.getOperator() != null ? requirement.getOperator() : "EQUALS";
-        Object expected = requirement.getExpectedValue();
-
-        if ("NOT_EXISTS".equalsIgnoreCase(op)) {
-            return actualVal == null;
-        }
-        if (actualVal == null) {
-            return false;
-        }
-        if ("EXISTS".equalsIgnoreCase(op)) {
-            return true;
-        }
-        if ("EQUALS".equalsIgnoreCase(op)) {
-            return areEqual(actualVal, expected);
-        }
-        if ("NOT_EQUALS".equalsIgnoreCase(op)) {
-            return !areEqual(actualVal, expected);
-        }
-        if ("GREATER_THAN_OR_EQUAL".equalsIgnoreCase(op)) {
-            try {
-                return Double.parseDouble(String.valueOf(actualVal)) >= Double.parseDouble(String.valueOf(expected));
-            } catch (Exception e) {
-                return false;
-            }
-        }
-        return areEqual(actualVal, expected);
     }
 
     private String extractSource(List<SourceMapEntry> sourceMap, String canonicalField) {

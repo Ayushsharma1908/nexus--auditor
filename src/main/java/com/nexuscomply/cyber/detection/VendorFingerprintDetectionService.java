@@ -53,6 +53,8 @@ public class VendorFingerprintDetectionService implements VendorDetectionService
         });
     }
 
+    private static final Pattern CISCO_IOS_XE_VERSION_PATTERN = Pattern.compile("(?m)^\\s*version\\s+(?:16|17|18|3)\\.");
+
     @Override
     public VendorDetectionResponse detectVendor(String rawConfig) {
         return detectVendor(new VendorDetectionRequest(rawConfig));
@@ -129,7 +131,7 @@ public class VendorFingerprintDetectionService implements VendorDetectionService
         String platform = "UNKNOWN";
 
         if ("Cisco".equalsIgnoreCase(bestVendor)) {
-            platform = rawConfig.contains("IOS-XE") || rawConfig.contains("17.") ? "IOS-XE" : "IOS";
+            platform = rawConfig.contains("IOS-XE") || CISCO_IOS_XE_VERSION_PATTERN.matcher(rawConfig).find() ? "IOS-XE" : "IOS";
         } else if ("Juniper".equalsIgnoreCase(bestVendor)) {
             platform = "JUNOS";
         } else if ("Fortinet".equalsIgnoreCase(bestVendor)) {

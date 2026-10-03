@@ -514,5 +514,110 @@ class RemediationEngineIntegrationTest {
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> verificationService.verifyFinding(null, null))
                 .isInstanceOf(IllegalArgumentException.class);
     }
+
+    @Test
+    @DisplayName("Task 2.9d Item 3: Platform detection for Cisco configs (a, b, c) and IOS audit remediation")
+    void testPlatformDetectionAndIosAuditRemediation() {
+        cisSeeder.seed();
+        templateSeeder.seed();
+
+        // (a) Cisco config with no version line and IP address 10.17.1.1
+        String configA = String.join("\n",
+                "hostname cisco-edge-01",
+                "interface GigabitEthernet0/1",
+                " ip address 10.17.1.1 255.255.255.0",
+                "line vty 0 4",
+                " transport input telnet"
+        );
+        com.nexuscomply.cyber.detection.VendorDetectionResponse respA = vendorDetectionService.detectVendor(configA);
+        System.out.println("=== CONFIG A (NO VERSION, IP 10.17.1.1) DETECTION ===");
+        System.out.println("Vendor: " + respA.getVendor() + ", Platform: " + respA.getPlatform() + ", Confidence: " + respA.getConfidence());
+        assertThat(respA.getVendor()).isEqualTo("Cisco");
+        assertThat(respA.getPlatform()).isEqualTo("IOS");
+
+        // (b) Cisco config with version 17.6
+        String configB = String.join("\n",
+                "hostname cisco-edge-02",
+                "version 17.6",
+                "interface GigabitEthernet0/1",
+                " ip address 10.0.0.1 255.255.255.0",
+                "line vty 0 4",
+                " transport input telnet"
+        );
+        com.nexuscomply.cyber.detection.VendorDetectionResponse respB = vendorDetectionService.detectVendor(configB);
+        System.out.println("=== CONFIG B (VERSION 17.6) DETECTION ===");
+        System.out.println("Vendor: " + respB.getVendor() + ", Platform: " + respB.getPlatform() + ", Confidence: " + respB.getConfidence());
+        assertThat(respB.getVendor()).isEqualTo("Cisco");
+        assertThat(respB.getPlatform()).isEqualTo("IOS-XE");
+
+        // (c) Cisco config with version 16.12 (detects as IOS-XE)
+        String configC = String.join("\n",
+                "hostname cisco-edge-03",
+                "version 16.12",
+                "interface GigabitEthernet0/1",
+                " ip address 10.0.0.1 255.255.255.0",
+                "line vty 0 4",
+                " transport input telnet"
+        );
+        com.nexuscomply.cyber.detection.VendorDetectionResponse respC = vendorDetectionService.detectVendor(configC);
+        System.out.println("=== CONFIG C (VERSION 16.12) DETECTION ===");
+        System.out.println("Vendor: " + respC.getVendor() + ", Platform: " + respC.getPlatform() + ", Confidence: " + respC.getConfidence());
+        assertThat(respC.getVendor()).isEqualTo("Cisco");
+        assertThat(respC.getPlatform()).isEqualTo("IOS-XE");
+
+        // (d) Cisco config with version 15.2 (classical IOS)
+        String configD = String.join("\n",
+                "hostname cisco-edge-04",
+                "version 15.2",
+                "interface GigabitEthernet0/1",
+                " ip address 10.0.0.1 255.255.255.0",
+                "line vty 0 4",
+                " transport input telnet"
+        );
+        com.nexuscomply.cyber.detection.VendorDetectionResponse respD = vendorDetectionService.detectVendor(configD);
+        System.out.println("=== CONFIG D (VERSION 15.2) DETECTION ===");
+        System.out.println("Vendor: " + respD.getVendor() + ", Platform: " + respD.getPlatform() + ", Confidence: " + respD.getConfidence());
+        assertThat(respD.getVendor()).isEqualTo("Cisco");
+        assertThat(respD.getPlatform()).isEqualTo("IOS");
+
+        // Allow CIS telnet rule to apply to IOS configs regardless of OS version
+        ComplianceRuleDocument telnetRule = ruleRepository.findByRuleCode("CIS-1.2.2").orElseThrow();
+        telnetRule.setApplicableOsVersions(java.util.Collections.emptyList());
+        ruleRepository.save(telnetRule);
+
+        // Run startAudit on Cisco config that detects as "IOS" (configA)
+        Audit audit = auditOrchestrationService.startAudit("dev-cisco-ios-audit", "cfg-ios-01", "ver-ios-01", configA);
+        assertThat(audit.getStatus()).isEqualTo("COMPLETED");
+
+        List<FindingDocument> findingDocs = findingRepository.findByAuditId(audit.getId());
+        assertThat(findingDocs).isNotEmpty();
+        FindingDocument telnetDoc = findingDocs.stream()
+                .filter(f -> "security.telnet.enabled".equals(f.getCanonicalField()))
+                .findFirst().orElseThrow();
+
+        // Check direct repository lookup for platform "IOS"
+        java.util.Optional<RemediationTemplateDocument> directTemplate = templateRepository
+                .findByVendorAndPlatformAndCanonicalField("Cisco", "IOS", "security.telnet.enabled");
+        System.out.println("=== DIRECT REPOSITORY LOOKUP FOR (Cisco, IOS, security.telnet.enabled) ===");
+        System.out.println("Direct template found: " + directTemplate.isPresent());
+
+        // Create plan via planService
+        Finding finding = new Finding();
+        finding.setId(telnetDoc.getId());
+        finding.setAuditId(telnetDoc.getAuditId());
+        finding.setDeviceId(telnetDoc.getDeviceId());
+        finding.setConfigurationId(telnetDoc.getConfigurationId());
+        finding.setCanonicalField(telnetDoc.getCanonicalField());
+        finding.setExpected(telnetDoc.getExpected());
+        finding.setActual(telnetDoc.getActual());
+
+        RemediationPlan plan = planService.createPlanForFinding(finding);
+        assertThat(plan).isNotNull();
+        assertThat(plan.getStatus()).isEqualTo("PLANNED");
+
+        Document rawPlan = mongoTemplate.getCollection("remediation_plans").find(new Document("_id", plan.getId())).first();
+        System.out.println("=== PERSISTED REMEDIATION PLAN FOR IOS FINDING ===");
+        System.out.println(rawPlan != null ? rawPlan.toJson() : "null");
+    }
 }
 

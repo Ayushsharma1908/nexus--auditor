@@ -406,7 +406,7 @@ class DriftDetectionIntegrationTest {
         System.out.println("Risk After: " + driftEvent.getRiskAfter());
 
         assertThat(driftEvent.getAffectedControlIds()).hasSize(3);
-        assertThat(driftEvent.getRiskBefore()).isEqualTo(210); // 70 * 3
+        assertThat(driftEvent.getRiskBefore()).isEqualTo(70); // max over matching CIS, NIST, ISO rules (not 210)
         assertThat(driftEvent.getRiskAfter()).isEqualTo(0);
         assertThat(driftEvent.getImpact()).isEqualTo("DECREASED");
     }
@@ -477,7 +477,7 @@ class DriftDetectionIntegrationTest {
 
         assertThat(driftEvent.getRiskBefore()).isEqualTo(0);
         assertThat(driftEvent.getRiskAfter()).isEqualTo(0);
-        assertThat(driftEvent.getImpact()).isEqualTo("NO_CHANGE");
+        assertThat(driftEvent.getImpact()).isEqualTo("UNKNOWN");
     }
 
     @Test
@@ -561,14 +561,18 @@ class DriftDetectionIntegrationTest {
         assertThat(change.getBefore()).isNull();
         assertThat(change.getAfter()).isEqualTo(true);
         assertThat(change.getChangeType()).isEqualTo("ADDED");
-        assertThat(change.getClassification()).isEqualTo(DriftClassification.NO_SECURITY_IMPACT.name());
-        assertThat(event.getRiskBefore()).isEqualTo(70);
+        assertThat(change.getClassification()).isEqualTo(DriftClassification.DEGRADED.name());
+        assertThat(event.getRiskBefore()).isEqualTo(0);
         assertThat(event.getRiskAfter()).isEqualTo(70);
-        assertThat(event.getImpact()).isEqualTo("NO_CHANGE");
+        assertThat(event.getImpact()).isEqualTo("INCREASED");
+
+        Document rawDoc = mongoTemplate.getCollection("drift_events").find(new Document("deviceId", deviceId)).first();
+        System.out.println("=== NULL TO TRUE PERSISTED DRIFT EVENT ===");
+        System.out.println(rawDoc != null ? rawDoc.toJson() : "null");
     }
 
     @Test
-    @DisplayName("A5.2: Drift on telnet true -> null (REMOVED changeType, violation persists)")
+    @DisplayName("A5.2: Drift on telnet true -> null (REMOVED changeType, UNKNOWN_IMPACT, risk decreased)")
     void testTelnetDrift_TrueToNull() {
         cisSeeder.seed();
 
@@ -604,10 +608,14 @@ class DriftDetectionIntegrationTest {
         assertThat(change.getBefore()).isEqualTo(true);
         assertThat(change.getAfter()).isNull();
         assertThat(change.getChangeType()).isEqualTo("REMOVED");
-        assertThat(change.getClassification()).isEqualTo(DriftClassification.NO_SECURITY_IMPACT.name());
+        assertThat(change.getClassification()).isEqualTo(DriftClassification.UNKNOWN_IMPACT.name());
         assertThat(event.getRiskBefore()).isEqualTo(70);
-        assertThat(event.getRiskAfter()).isEqualTo(70);
-        assertThat(event.getImpact()).isEqualTo("NO_CHANGE");
+        assertThat(event.getRiskAfter()).isEqualTo(0);
+        assertThat(event.getImpact()).isEqualTo("DECREASED");
+
+        Document rawDoc = mongoTemplate.getCollection("drift_events").find(new Document("deviceId", deviceId)).first();
+        System.out.println("=== TRUE TO NULL PERSISTED DRIFT EVENT ===");
+        System.out.println(rawDoc != null ? rawDoc.toJson() : "null");
     }
 
     @Test
@@ -649,12 +657,12 @@ class DriftDetectionIntegrationTest {
     }
 
     @Test
-    @DisplayName("A5.4: Two fields changed at once (one improved, one degraded) with equal risk yields INCREASED impact")
+    @DisplayName("A5.4: Two fields changed at once (one improved, one degraded) with equal risk yields MIXED impact")
     void testTwoFieldsChangedAtOnce_OneImprovedOneDegraded_ImpactDetermination() {
         cisSeeder.seed();
 
         String deviceId = "dev-drift-multi-change";
-        // Before: telnet=true (violates CIS-1.2.2, risk 70), ssh.version=2 (complies with CIS-2.1.1.2)
+        // Before: telnet=true (violates CIS-1.2.2, risk 70), snmp.version="3" (complies with CIS-1.5.9)
         NormalizedConfigurationDocument docA = new NormalizedConfigurationDocument();
         docA.setId("norm-m-1");
         docA.setDeviceId(deviceId);
@@ -664,11 +672,11 @@ class DriftDetectionIntegrationTest {
         docA.setPlatform("IOS-XE");
         CanonicalSecurityModel canonA = new CanonicalSecurityModel();
         canonA.setTelnet(true);
-        canonA.setSsh(true, 2);
+        canonA.setSnmp(true, "3");
         docA.setCanonical(canonA);
         normalizedConfigRepository.save(docA);
 
-        // After: telnet=false (complies with CIS-1.2.2, IMPROVED), ssh.version=1 (violates CIS-2.1.1.2, DEGRADED, risk 70)
+        // After: telnet=false (complies with CIS-1.2.2, IMPROVED, risk 0), snmp.version="2c" (violates CIS-1.5.9, DEGRADED, risk 70)
         NormalizedConfigurationDocument docB = new NormalizedConfigurationDocument();
         docB.setId("norm-m-2");
         docB.setDeviceId(deviceId);
@@ -678,7 +686,7 @@ class DriftDetectionIntegrationTest {
         docB.setPlatform("IOS-XE");
         CanonicalSecurityModel canonB = new CanonicalSecurityModel();
         canonB.setTelnet(false);
-        canonB.setSsh(true, 1);
+        canonB.setSnmp(true, "2c");
         docB.setCanonical(canonB);
         normalizedConfigRepository.save(docB);
 
@@ -690,15 +698,19 @@ class DriftDetectionIntegrationTest {
                 .findFirst().orElseThrow();
         assertThat(telnetChange.getClassification()).isEqualTo(DriftClassification.IMPROVED.name());
 
-        DriftChange sshChange = event.getChanges().stream()
-                .filter(c -> "security.ssh.version".equals(c.getCanonicalField()))
+        DriftChange snmpChange = event.getChanges().stream()
+                .filter(c -> "security.snmp.version".equals(c.getCanonicalField()))
                 .findFirst().orElseThrow();
-        assertThat(sshChange.getClassification()).isEqualTo(DriftClassification.DEGRADED.name());
+        assertThat(snmpChange.getClassification()).isEqualTo(DriftClassification.DEGRADED.name());
 
-        // Both risks equal 70, tie-breaker prioritizes DEGRADED -> INCREASED impact
+        // Both risks equal 70, contains both IMPROVED and DEGRADED -> MIXED impact
         assertThat(event.getRiskBefore()).isEqualTo(70);
         assertThat(event.getRiskAfter()).isEqualTo(70);
-        assertThat(event.getImpact()).isEqualTo("INCREASED");
+        assertThat(event.getImpact()).isEqualTo("MIXED");
+
+        Document rawDoc = mongoTemplate.getCollection("drift_events").find(new Document("deviceId", deviceId)).first();
+        System.out.println("=== MIXED EVENT PERSISTED DRIFT EVENT ===");
+        System.out.println(rawDoc != null ? rawDoc.toJson() : "null");
     }
 
     @Test
@@ -868,7 +880,11 @@ class DriftDetectionIntegrationTest {
         assertThat(change.getClassification()).isEqualTo(DriftClassification.UNKNOWN_IMPACT.name());
         assertThat(event.getRiskBefore()).isEqualTo(0);
         assertThat(event.getRiskAfter()).isEqualTo(0);
-        assertThat(event.getImpact()).isEqualTo("NO_CHANGE");
+        assertThat(event.getImpact()).isEqualTo("UNKNOWN");
+
+        Document rawDoc = mongoTemplate.getCollection("drift_events").find(new Document("deviceId", deviceId)).first();
+        System.out.println("=== JUNIPER TELNET PERSISTED DRIFT EVENT ===");
+        System.out.println(rawDoc != null ? rawDoc.toJson() : "null");
     }
 
     @Test
@@ -889,6 +905,76 @@ class DriftDetectionIntegrationTest {
         assertThat(countAfter).isEqualTo(0);
         assertThat(event.getRiskBefore()).isEqualTo(70);
         assertThat(event.getRiskAfter()).isEqualTo(0);
+    }
+
+    @Test
+    @DisplayName("A5.19: RiskBefore clamped at 100 with further degrade yields equal risk 100->100 and INCREASED impact")
+    void testClampedRiskAt100_FurtherDegrade_YieldsIncreasedImpact() {
+        cisSeeder.seed();
+
+        String deviceId = "dev-drift-clamped-risk";
+
+        // docA has two failing fields (ssh version 1 -> 70, snmp version "1" -> 70) and telnet passing (false -> 0)
+        // Total risk before: 70 + 70 + 0 = 140 -> clamped to 100
+        NormalizedConfigurationDocument docA = new NormalizedConfigurationDocument();
+        docA.setId("norm-clamp-1");
+        docA.setDeviceId(deviceId);
+        docA.setConfigurationId("cfg-clamp-1");
+        docA.setVersionId("ver-1");
+        docA.setVendor("Cisco");
+        docA.setPlatform("IOS-XE");
+        docA.setOsVersion("17.6");
+        CanonicalSecurityModel canonA = new CanonicalSecurityModel();
+        canonA.setSsh(true, 1);
+        canonA.setSnmp(true, "1");
+        canonA.setTelnet(false);
+        docA.setCanonical(canonA);
+        docA.setSourceMap(List.of(
+                new SourceMapEntry("security.ssh.version", 10, "ip ssh version 1"),
+                new SourceMapEntry("security.snmp.version", 11, "snmp-server community public RO"),
+                new SourceMapEntry("security.telnet.enabled", 12, "transport input ssh")
+        ));
+        normalizedConfigRepository.save(docA);
+
+        // docB changes ssh to 0 (still fails -> NO_SECURITY_IMPACT, risk 70),
+        // snmp to "2c" (still fails -> NO_SECURITY_IMPACT, risk 70),
+        // and telnet from false to true (DEGRADED, risk 70)
+        // Total risk after: 70 + 70 + 70 = 210 -> clamped to 100
+        NormalizedConfigurationDocument docB = new NormalizedConfigurationDocument();
+        docB.setId("norm-clamp-2");
+        docB.setDeviceId(deviceId);
+        docB.setConfigurationId("cfg-clamp-2");
+        docB.setVersionId("ver-2");
+        docB.setVendor("Cisco");
+        docB.setPlatform("IOS-XE");
+        docB.setOsVersion("17.6");
+        CanonicalSecurityModel canonB = new CanonicalSecurityModel();
+        canonB.setSsh(true, 0);
+        canonB.setSnmp(true, "2c");
+        canonB.setTelnet(true);
+        docB.setCanonical(canonB);
+        docB.setSourceMap(List.of(
+                new SourceMapEntry("security.ssh.version", 10, "no ip ssh"),
+                new SourceMapEntry("security.snmp.version", 11, "snmp-server community private RW"),
+                new SourceMapEntry("security.telnet.enabled", 12, "transport input telnet")
+        ));
+        normalizedConfigRepository.save(docB);
+
+        DriftEvent event = driftDetectionService.detectDrift(docA, docB);
+
+        assertThat(event.getChanges()).hasSize(3);
+
+        DriftChange telnetChange = event.getChanges().stream()
+                .filter(c -> "security.telnet.enabled".equals(c.getCanonicalField()))
+                .findFirst().orElseThrow();
+        assertThat(telnetChange.getClassification()).isEqualTo(DriftClassification.DEGRADED.name());
+
+        // Verify riskBefore and riskAfter are both clamped at 100
+        assertThat(event.getRiskBefore()).isEqualTo(100);
+        assertThat(event.getRiskAfter()).isEqualTo(100);
+
+        // Equal risk with only DEGRADED change must yield INCREASED impact
+        assertThat(event.getImpact()).isEqualTo("INCREASED");
     }
 
     private NormalizedConfigurationDocument createDoc(

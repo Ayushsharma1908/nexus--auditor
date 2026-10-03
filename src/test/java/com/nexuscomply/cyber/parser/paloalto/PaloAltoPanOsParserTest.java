@@ -787,4 +787,256 @@ class PaloAltoPanOsParserTest {
         assertThat(xmlResult.getSourceMap()).extracting(SourceMapEntry::getCanonicalField)
                 .contains("security.https.enabled");
     }
+
+    // =========================================================================
+    // ITEM 5: PAN INTERFACE ATTACHMENT FORMS (layer3 units, loopback, vlan, aggregate-ethernet) x (set, XML)
+    // =========================================================================
+
+    private void printPanResult(String formName, ParserResult result) throws Exception {
+        com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        System.out.println("=== PAN ATTACHMENT: " + formName + " CANONICAL ===");
+        System.out.println(mapper.writeValueAsString(result.getCanonical()));
+        System.out.println("=== PAN ATTACHMENT: " + formName + " UNKNOWNS ===");
+        System.out.println(mapper.writeValueAsString(result.getUnknowns()));
+    }
+
+    @Test
+    @DisplayName("PAN Attachment 1: layer3 units (Set CLI)")
+    void testPanAttachment_Layer3Units_Set() throws Exception {
+        String config = String.join("\n",
+                "set network profiles interface-management-profile mgmt-prof ssh yes",
+                "set network profiles interface-management-profile mgmt-prof telnet no",
+                "set network profiles interface-management-profile mgmt-prof https yes",
+                "set network interface ethernet ethernet1/1 layer3 units ethernet1/1.10 interface-management-profile mgmt-prof"
+        );
+        ParserResult result = parser.parse(config);
+        assertThat(result.getStatus()).isEqualTo("COMPLETED");
+        printPanResult("layer3-units-set", result);
+        Map<String, Object> sec = result.getCanonical().getSecurity();
+        assertThat(((Map<?, ?>) sec.get("ssh")).get("enabled")).isEqualTo(true);
+        assertThat(sec.get("telnet")).isNull();
+        assertThat(((Map<?, ?>) sec.get("https")).get("enabled")).isEqualTo(true);
+    }
+
+    @Test
+    @DisplayName("PAN Attachment 2: layer3 units (XML)")
+    void testPanAttachment_Layer3Units_Xml() throws Exception {
+        String xml = """
+                <config version="10.1.0">
+                  <devices>
+                    <entry name="localhost.localdomain">
+                      <network>
+                        <profiles>
+                          <interface-management-profile>
+                            <entry name="mgmt-prof">
+                              <ssh>yes</ssh>
+                              <telnet>no</telnet>
+                              <https>yes</https>
+                            </entry>
+                          </interface-management-profile>
+                        </profiles>
+                        <interface>
+                          <ethernet>
+                            <entry name="ethernet1/1">
+                              <layer3>
+                                <units>
+                                  <entry name="ethernet1/1.10">
+                                    <interface-management-profile>mgmt-prof</interface-management-profile>
+                                  </entry>
+                                </units>
+                              </layer3>
+                            </entry>
+                          </ethernet>
+                        </interface>
+                      </network>
+                    </entry>
+                  </devices>
+                </config>
+                """;
+        ParserResult result = parser.parse(xml);
+        assertThat(result.getStatus()).isEqualTo("COMPLETED");
+        printPanResult("layer3-units-xml", result);
+        Map<String, Object> sec = result.getCanonical().getSecurity();
+        assertThat(((Map<?, ?>) sec.get("ssh")).get("enabled")).isEqualTo(true);
+        assertThat(sec.get("telnet")).isNull();
+        assertThat(((Map<?, ?>) sec.get("https")).get("enabled")).isEqualTo(true);
+    }
+
+    @Test
+    @DisplayName("PAN Attachment 3: loopback (Set CLI)")
+    void testPanAttachment_Loopback_Set() throws Exception {
+        String config = String.join("\n",
+                "set network profiles interface-management-profile mgmt-prof ssh yes",
+                "set network profiles interface-management-profile mgmt-prof telnet no",
+                "set network profiles interface-management-profile mgmt-prof https yes",
+                "set network interface loopback units loopback.1 interface-management-profile mgmt-prof"
+        );
+        ParserResult result = parser.parse(config);
+        assertThat(result.getStatus()).isEqualTo("COMPLETED");
+        printPanResult("loopback-set", result);
+        Map<String, Object> sec = result.getCanonical().getSecurity();
+        assertThat(((Map<?, ?>) sec.get("ssh")).get("enabled")).isEqualTo(true);
+        assertThat(sec.get("telnet")).isNull();
+        assertThat(((Map<?, ?>) sec.get("https")).get("enabled")).isEqualTo(true);
+    }
+
+    @Test
+    @DisplayName("PAN Attachment 4: loopback (XML)")
+    void testPanAttachment_Loopback_Xml() throws Exception {
+        String xml = """
+                <config version="10.1.0">
+                  <devices>
+                    <entry name="localhost.localdomain">
+                      <network>
+                        <profiles>
+                          <interface-management-profile>
+                            <entry name="mgmt-prof">
+                              <ssh>yes</ssh>
+                              <telnet>no</telnet>
+                              <https>yes</https>
+                            </entry>
+                          </interface-management-profile>
+                        </profiles>
+                        <interface>
+                          <loopback>
+                            <units>
+                              <entry name="loopback.1">
+                                <interface-management-profile>mgmt-prof</interface-management-profile>
+                              </entry>
+                            </units>
+                          </loopback>
+                        </interface>
+                      </network>
+                    </entry>
+                  </devices>
+                </config>
+                """;
+        ParserResult result = parser.parse(xml);
+        assertThat(result.getStatus()).isEqualTo("COMPLETED");
+        printPanResult("loopback-xml", result);
+        Map<String, Object> sec = result.getCanonical().getSecurity();
+        assertThat(((Map<?, ?>) sec.get("ssh")).get("enabled")).isEqualTo(true);
+        assertThat(sec.get("telnet")).isNull();
+        assertThat(((Map<?, ?>) sec.get("https")).get("enabled")).isEqualTo(true);
+    }
+
+    @Test
+    @DisplayName("PAN Attachment 5: vlan (Set CLI)")
+    void testPanAttachment_Vlan_Set() throws Exception {
+        String config = String.join("\n",
+                "set network profiles interface-management-profile mgmt-prof ssh yes",
+                "set network profiles interface-management-profile mgmt-prof telnet no",
+                "set network profiles interface-management-profile mgmt-prof https yes",
+                "set network interface vlan units vlan.100 interface-management-profile mgmt-prof"
+        );
+        ParserResult result = parser.parse(config);
+        assertThat(result.getStatus()).isEqualTo("COMPLETED");
+        printPanResult("vlan-set", result);
+        Map<String, Object> sec = result.getCanonical().getSecurity();
+        assertThat(((Map<?, ?>) sec.get("ssh")).get("enabled")).isEqualTo(true);
+        assertThat(sec.get("telnet")).isNull();
+        assertThat(((Map<?, ?>) sec.get("https")).get("enabled")).isEqualTo(true);
+    }
+
+    @Test
+    @DisplayName("PAN Attachment 6: vlan (XML)")
+    void testPanAttachment_Vlan_Xml() throws Exception {
+        String xml = """
+                <config version="10.1.0">
+                  <devices>
+                    <entry name="localhost.localdomain">
+                      <network>
+                        <profiles>
+                          <interface-management-profile>
+                            <entry name="mgmt-prof">
+                              <ssh>yes</ssh>
+                              <telnet>no</telnet>
+                              <https>yes</https>
+                            </entry>
+                          </interface-management-profile>
+                        </profiles>
+                        <interface>
+                          <vlan>
+                            <units>
+                              <entry name="vlan.100">
+                                <interface-management-profile>mgmt-prof</interface-management-profile>
+                              </entry>
+                            </units>
+                          </vlan>
+                        </interface>
+                      </network>
+                    </entry>
+                  </devices>
+                </config>
+                """;
+        ParserResult result = parser.parse(xml);
+        assertThat(result.getStatus()).isEqualTo("COMPLETED");
+        printPanResult("vlan-xml", result);
+        Map<String, Object> sec = result.getCanonical().getSecurity();
+        assertThat(((Map<?, ?>) sec.get("ssh")).get("enabled")).isEqualTo(true);
+        assertThat(sec.get("telnet")).isNull();
+        assertThat(((Map<?, ?>) sec.get("https")).get("enabled")).isEqualTo(true);
+    }
+
+    @Test
+    @DisplayName("PAN Attachment 7: aggregate-ethernet (Set CLI)")
+    void testPanAttachment_AggregateEthernet_Set() throws Exception {
+        String config = String.join("\n",
+                "set network profiles interface-management-profile mgmt-prof ssh yes",
+                "set network profiles interface-management-profile mgmt-prof telnet no",
+                "set network profiles interface-management-profile mgmt-prof https yes",
+                "set network interface aggregate-ethernet ae1 layer3 units ae1.1 interface-management-profile mgmt-prof"
+        );
+        ParserResult result = parser.parse(config);
+        assertThat(result.getStatus()).isEqualTo("COMPLETED");
+        printPanResult("aggregate-ethernet-set", result);
+        Map<String, Object> sec = result.getCanonical().getSecurity();
+        assertThat(((Map<?, ?>) sec.get("ssh")).get("enabled")).isEqualTo(true);
+        assertThat(sec.get("telnet")).isNull();
+        assertThat(((Map<?, ?>) sec.get("https")).get("enabled")).isEqualTo(true);
+    }
+
+    @Test
+    @DisplayName("PAN Attachment 8: aggregate-ethernet (XML)")
+    void testPanAttachment_AggregateEthernet_Xml() throws Exception {
+        String xml = """
+                <config version="10.1.0">
+                  <devices>
+                    <entry name="localhost.localdomain">
+                      <network>
+                        <profiles>
+                          <interface-management-profile>
+                            <entry name="mgmt-prof">
+                              <ssh>yes</ssh>
+                              <telnet>no</telnet>
+                              <https>yes</https>
+                            </entry>
+                          </interface-management-profile>
+                        </profiles>
+                        <interface>
+                          <aggregate-ethernet>
+                            <entry name="ae1">
+                              <layer3>
+                                <units>
+                                  <entry name="ae1.1">
+                                    <interface-management-profile>mgmt-prof</interface-management-profile>
+                                  </entry>
+                                </units>
+                              </layer3>
+                            </entry>
+                          </aggregate-ethernet>
+                        </interface>
+                      </network>
+                    </entry>
+                  </devices>
+                </config>
+                """;
+        ParserResult result = parser.parse(xml);
+        assertThat(result.getStatus()).isEqualTo("COMPLETED");
+        printPanResult("aggregate-ethernet-xml", result);
+        Map<String, Object> sec = result.getCanonical().getSecurity();
+        assertThat(((Map<?, ?>) sec.get("ssh")).get("enabled")).isEqualTo(true);
+        assertThat(sec.get("telnet")).isNull();
+        assertThat(((Map<?, ?>) sec.get("https")).get("enabled")).isEqualTo(true);
+    }
 }
