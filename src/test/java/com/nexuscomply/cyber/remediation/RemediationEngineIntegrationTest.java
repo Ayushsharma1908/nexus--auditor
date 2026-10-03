@@ -246,6 +246,14 @@ class RemediationEngineIntegrationTest {
                 .orElseThrow();
         assertThat(ciscoSnmp.getCommandType()).isEqualTo(CommandType.REPRESENTATIVE_EXAMPLE);
         assertThat(ciscoSnmp.getCommands()).containsExactly("snmp-server group <name> v3 priv");
+
+        // Fortinet Telnet unselect allowaccess
+        RemediationTemplateDocument fortinetTelnet = templateRepository
+                .findByVendorAndPlatformAndCanonicalField("Fortinet", "FortiOS", "security.telnet.enabled")
+                .orElseThrow();
+        assertThat(fortinetTelnet.getCommands()).containsExactly(
+                "config system interface", "edit <port>", "unselect allowaccess telnet", "next", "end"
+        );
     }
 
     @Test
@@ -272,12 +280,11 @@ class RemediationEngineIntegrationTest {
     @DisplayName("Persisted documents conform field-by-field to schema1.md Section 15 and Section 16")
     void testRawDocumentFieldParityWithSchema1() throws Exception {
         templateSeeder.seed();
-        RemediationTemplateDocument tplDoc = templateRepository
-                .findByVendorAndPlatformAndCanonicalField("Cisco", "IOS-XE", "security.ssh.version")
-                .orElseThrow();
 
-        // Raw MongoDB document check for Section 15 (remediation_templates)
-        Document rawTpl = mongoTemplate.getCollection("remediation_templates").find().first();
+        // 1. Cisco Telnet template & plan pair (referencing each other)
+        Document rawTpl = mongoTemplate.getCollection("remediation_templates")
+                .find(new Document("vendor", "Cisco").append("platform", "IOS-XE").append("canonicalField", "security.telnet.enabled"))
+                .first();
         assertThat(rawTpl).isNotNull();
         assertThat(rawTpl.containsKey("_id")).isTrue();
         assertThat(rawTpl.containsKey("vendor")).isTrue();
@@ -293,7 +300,6 @@ class RemediationEngineIntegrationTest {
         assertThat(rawTpl.containsKey("createdAt")).isTrue();
         assertThat(rawTpl.containsKey("updatedAt")).isTrue();
 
-        // Create a plan and inspect raw MongoDB document for Section 16 (remediation_plans)
         Finding finding = new Finding();
         finding.setId("find-cisco-telnet-01");
         finding.setDeviceId("dev-cisco-01");
@@ -312,13 +318,17 @@ class RemediationEngineIntegrationTest {
 
         RemediationPlan plan = planService.createPlanForFinding(finding);
         assertThat(plan).isNotNull();
+        assertThat(plan.getTemplateId()).isEqualTo(rawTpl.getString("_id"));
 
-        Document rawPlan = mongoTemplate.getCollection("remediation_plans").find().first();
+        Document rawPlan = mongoTemplate.getCollection("remediation_plans")
+                .find(new Document("findingId", finding.getId()))
+                .first();
         assertThat(rawPlan).isNotNull();
         assertThat(rawPlan.containsKey("_id")).isTrue();
         assertThat(rawPlan.containsKey("findingId")).isTrue();
         assertThat(rawPlan.containsKey("deviceId")).isTrue();
         assertThat(rawPlan.containsKey("templateId")).isTrue();
+        assertThat(rawPlan.getString("templateId")).isEqualTo(rawTpl.getString("_id"));
         assertThat(rawPlan.containsKey("status")).isTrue();
         assertThat(rawPlan.getString("status")).isEqualTo("PLANNED"); // NON-APPROVED
         assertThat(rawPlan.containsKey("steps")).isTrue();
@@ -328,10 +338,46 @@ class RemediationEngineIntegrationTest {
         assertThat(rawPlan.containsKey("createdAt")).isTrue();
         assertThat(rawPlan.containsKey("updatedAt")).isTrue();
 
-        System.out.println("=== RAW PERSISTED TEMPLATE (schema1.md Sec 15) ===");
+        // 2. Fortinet PLATFORM_GAP template & plan pair (referencing each other)
+        Document rawFortiTpl = mongoTemplate.getCollection("remediation_templates")
+                .find(new Document("vendor", "Fortinet").append("platform", "FortiOS").append("canonicalField", "security.ssh.version"))
+                .first();
+        assertThat(rawFortiTpl).isNotNull();
+
+        Finding fortiFinding = new Finding();
+        fortiFinding.setId("find-forti-ssh-01");
+        fortiFinding.setDeviceId("dev-forti-01");
+        fortiFinding.setConfigurationId("cfg-forti-01");
+        fortiFinding.setCanonicalField("security.ssh.version");
+        fortiFinding.setExpected(2);
+        fortiFinding.setActual(null);
+
+        NormalizedConfigurationDocument fortiDoc = new NormalizedConfigurationDocument();
+        fortiDoc.setId("norm-forti-01");
+        fortiDoc.setConfigurationId("cfg-forti-01");
+        fortiDoc.setDeviceId("dev-forti-01");
+        fortiDoc.setVendor("Fortinet");
+        fortiDoc.setPlatform("FortiOS");
+        normalizedConfigRepository.save(fortiDoc);
+
+        RemediationPlan fortiPlan = planService.createPlanForFinding(fortiFinding);
+        assertThat(fortiPlan).isNotNull();
+        assertThat(fortiPlan.getTemplateId()).isEqualTo(rawFortiTpl.getString("_id"));
+
+        Document rawFortiPlan = mongoTemplate.getCollection("remediation_plans")
+                .find(new Document("findingId", fortiFinding.getId()))
+                .first();
+        assertThat(rawFortiPlan).isNotNull();
+        assertThat(rawFortiPlan.getString("templateId")).isEqualTo(rawFortiTpl.getString("_id"));
+
+        System.out.println("=== RAW PERSISTED CISCO TELNET TEMPLATE (schema1.md Sec 15) ===");
         System.out.println(rawTpl.toJson());
-        System.out.println("=== RAW PERSISTED PLAN (schema1.md Sec 16) ===");
+        System.out.println("=== RAW PERSISTED CISCO TELNET PLAN (schema1.md Sec 16) ===");
         System.out.println(rawPlan.toJson());
+        System.out.println("=== RAW PERSISTED FORTINET PLATFORM_GAP TEMPLATE (schema1.md Sec 15) ===");
+        System.out.println(rawFortiTpl.toJson());
+        System.out.println("=== RAW PERSISTED FORTINET PLATFORM_GAP PLAN (schema1.md Sec 16) ===");
+        System.out.println(rawFortiPlan.toJson());
     }
 
     @Test

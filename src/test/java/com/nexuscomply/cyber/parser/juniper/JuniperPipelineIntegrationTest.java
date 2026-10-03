@@ -6,6 +6,7 @@ import com.mongodb.client.MongoClients;
 import com.nexuscomply.cyber.audit.Audit;
 import com.nexuscomply.cyber.audit.AuditOrchestrationService;
 import com.nexuscomply.cyber.audit.AuditOrchestrationServiceImpl;
+import com.nexuscomply.cyber.audit.AuditSummary;
 import com.nexuscomply.cyber.audit.persistence.AuditDocument;
 import com.nexuscomply.cyber.audit.persistence.AuditRepository;
 import com.nexuscomply.cyber.compliance.DefaultRuleApplicabilityChecker;
@@ -241,40 +242,136 @@ class JuniperPipelineIntegrationTest {
                 .toList();
         assertThat(expectedFrameworkIds).hasSize(3);
 
-        // 6. Confirm vendor isolation: audit status COMPLETED, totalControls is 21 (all 21 rules not-applicable)
+        // 6. Confirm vendor-neutral rule coverage for telnet and SSH version
         assertThat(audit.getStatus()).isEqualTo("COMPLETED");
         assertThat(audit.getFrameworkIds()).containsExactlyInAnyOrderElementsOf(expectedFrameworkIds);
-        assertThat(audit.getSummary()).isNotNull();
-        assertThat(audit.getSummary().getTotalControls()).isEqualTo(21);
-        assertThat(audit.getSummary().getPassed()).isEqualTo(0);
-        assertThat(audit.getSummary().getFailed()).isEqualTo(0);
-        assertThat(audit.getSummary().getNotApplicable()).isEqualTo(21);
-        // Zero applicable controls must produce null complianceScore (N/A), not 100.0,
-        // preventing conflation with an actual clean audit pass.
-        assertThat(audit.getComplianceScore()).isNull();
+        AuditSummary sum = audit.getSummary();
+        assertThat(sum).isNotNull();
+        assertThat(sum.getTotalControls()).isEqualTo(21);
+        assertThat(sum.getPassed()).isEqualTo(2); // NIST-SC-8, ISO-A.10.1.1
+        assertThat(sum.getFailed()).isEqualTo(2); // NIST-AC-17, ISO-A.13.1.1-TELNET
+        assertThat(sum.getUnknown()).isEqualTo(0);
+        assertThat(sum.getNotApplicable()).isEqualTo(17);
+        assertThat(sum.getError()).isEqualTo(0);
+        assertThat(sum.getPassed() + sum.getFailed() + sum.getUnknown() + sum.getNotApplicable() + sum.getError()).isEqualTo(sum.getTotalControls());
+        assertThat(audit.getComplianceScore()).isEqualTo(50.0);
 
-        // No findings or evidence should be created because no rules applied to Juniper
+        // Exactly 2 findings on security.telnet.enabled (1 NIST, 1 ISO)
         List<FindingDocument> findings = findingRepository.findByAuditId(auditId);
-        assertThat(findings).isEmpty();
+        assertThat(findings).hasSize(2);
+        for (FindingDocument f : findings) {
+            assertThat(f.getCanonicalField()).isEqualTo("security.telnet.enabled");
+            assertThat(f.getComplianceStatus()).isEqualTo("FAIL");
+            assertThat(f.getEvidenceIds()).hasSize(1);
+            EvidenceDocument ev = evidenceRepository.findById(f.getEvidenceIds().get(0)).orElseThrow();
+            assertThat(ev.getFindingId()).isEqualTo(f.getId());
+        }
 
         List<EvidenceDocument> evidence = evidenceRepository.findByAuditId(auditId);
-        assertThat(evidence).isEmpty();
+        assertThat(evidence).hasSize(2);
 
         // 7. Verify persisted AuditDocument
         AuditDocument persistedAuditDoc = auditRepository.findById(auditId).orElseThrow();
         assertThat(persistedAuditDoc.getStatus()).isEqualTo("COMPLETED");
-        assertThat(persistedAuditDoc.getFrameworkIds()).containsExactlyInAnyOrderElementsOf(expectedFrameworkIds);
         assertThat(persistedAuditDoc.getSummary().getTotalControls()).isEqualTo(21);
-        assertThat(persistedAuditDoc.getSummary().getNotApplicable()).isEqualTo(21);
-        assertThat(persistedAuditDoc.getComplianceScore()).isNull();
+        assertThat(persistedAuditDoc.getSummary().getPassed()).isEqualTo(2);
+        assertThat(persistedAuditDoc.getSummary().getFailed()).isEqualTo(2);
+        assertThat(persistedAuditDoc.getSummary().getNotApplicable()).isEqualTo(17);
+        assertThat(persistedAuditDoc.getComplianceScore()).isEqualTo(50.0);
 
-        // Print raw JSON outputs for verification proof
-        String rawNormDocJson = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(normDoc);
-        String rawAuditDocJson = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(persistedAuditDoc);
+        // Print raw persisted documents for surefire capture
+        org.bson.Document rawNistRule = mongoTemplate.getCollection("compliance_rules")
+                .find(new org.bson.Document("ruleCode", "NIST-AC-17")).first();
+        System.out.println("=== RAW PERSISTED RULE DOCUMENT (JUNIPER APPLICABLE: NIST-AC-17) ===");
+        System.out.println(rawNistRule != null ? rawNistRule.toJson() : "null");
 
-        System.out.println("=== RAW NORMALIZED CONFIGURATION DOCUMENT ===");
-        System.out.println(rawNormDocJson);
-        System.out.println("=== RAW AUDIT DOCUMENT ===");
-        System.out.println(rawAuditDocJson);
+        for (int i = 0; i < findings.size(); i++) {
+            org.bson.Document rawFinding = mongoTemplate.getCollection("findings")
+                    .find(new org.bson.Document("_id", findings.get(i).getId())).first();
+            System.out.println("=== RAW PERSISTED JUNIPER FINDING " + (i + 1) + " ===");
+            System.out.println(rawFinding != null ? rawFinding.toJson() : "null");
+        }
+
+        for (int i = 0; i < evidence.size(); i++) {
+            org.bson.Document rawEv = mongoTemplate.getCollection("evidence")
+                    .find(new org.bson.Document("_id", evidence.get(i).getId())).first();
+            System.out.println("=== RAW PERSISTED JUNIPER EVIDENCE " + (i + 1) + " ===");
+            System.out.println(rawEv != null ? rawEv.toJson() : "null");
+        }
+
+        org.bson.Document rawAuditDoc = mongoTemplate.getCollection("audits")
+                .find(new org.bson.Document("_id", auditId)).first();
+        System.out.println("=== RAW PERSISTED JUNIPER DELIBERATE VIOLATION AUDIT DOCUMENT ===");
+        System.out.println(rawAuditDoc != null ? rawAuditDoc.toJson() : "null");
+
+        // 8. Create remediation plan for Juniper finding
+        com.nexuscomply.cyber.remediation.persistence.RemediationTemplateRepository tplRepo =
+                new MongoRepositoryFactory(mongoTemplate).getRepository(com.nexuscomply.cyber.remediation.persistence.RemediationTemplateRepository.class);
+        com.nexuscomply.cyber.remediation.persistence.RemediationPlanRepository planRepo =
+                new MongoRepositoryFactory(mongoTemplate).getRepository(com.nexuscomply.cyber.remediation.persistence.RemediationPlanRepository.class);
+        com.nexuscomply.cyber.remediation.seeder.RemediationTemplateSeeder tplSeeder =
+                new com.nexuscomply.cyber.remediation.seeder.RemediationTemplateSeeder(tplRepo);
+        tplSeeder.seed();
+
+        com.nexuscomply.cyber.remediation.service.RemediationPlanServiceImpl planService =
+                new com.nexuscomply.cyber.remediation.service.RemediationPlanServiceImpl(planRepo, tplRepo, normalizedConfigRepository, findingRepository);
+
+        com.nexuscomply.cyber.finding.Finding domainFinding = new com.nexuscomply.cyber.finding.Finding();
+        domainFinding.setId(findings.get(0).getId());
+        domainFinding.setDeviceId(deviceId);
+        domainFinding.setConfigurationId(configurationId);
+        domainFinding.setCanonicalField("security.telnet.enabled");
+        domainFinding.setExpected(false);
+        domainFinding.setActual(true);
+
+        com.nexuscomply.cyber.remediation.model.RemediationPlan plan = planService.createPlanForFinding(domainFinding);
+        assertThat(plan).isNotNull();
+        assertThat(plan.getStatus()).isEqualTo("PLANNED");
+        assertThat(plan.getSteps()).hasSize(1);
+        assertThat(plan.getSteps().get(0).getCommand()).isEqualTo("delete system services telnet");
+
+        org.bson.Document rawPlan = mongoTemplate.getCollection("remediation_plans")
+                .find(new org.bson.Document("findingId", domainFinding.getId())).first();
+        System.out.println("=== RAW PERSISTED JUNIPER REMEDIATION PLAN ===");
+        System.out.println(rawPlan != null ? rawPlan.toJson() : "null");
+    }
+
+    @Test
+    @DisplayName("Compliant Junos config -> PASS on SSH version, UNKNOWN on telnet (unset), complianceScore 50.0")
+    void testJuniperCompliantConfig() {
+        cisSeeder.seed();
+        nistSeeder.seed();
+        isoSeeder.seed();
+
+        String compliantJunosConfig = String.join("\n",
+                "set system host-name edge-router-clean",
+                "set system authentication-order [ radius password ]",
+                "set system services ssh protocol-version v2",
+                "set system services web-management https",
+                "set snmp v3 usm local-user secadmin authentication-sha authentication-password secretKey123",
+                "set system syslog host 10.100.1.25 any any",
+                "set system syslog file messages any notice",
+                "set system ntp server 10.100.1.1",
+                "set interfaces ge-0/0/0 unit 0 family inet address 192.168.10.1/24"
+        );
+
+        Audit audit = auditOrchestrationService.startAudit("juniper-clean-01", "cfg-junos-clean", "ver-junos-clean", compliantJunosConfig);
+        assertThat(audit.getStatus()).isEqualTo("COMPLETED");
+
+        AuditSummary sum = audit.getSummary();
+        assertThat(sum.getTotalControls()).isEqualTo(21);
+        assertThat(sum.getPassed()).isEqualTo(2); // NIST-SC-8, ISO-A.10.1.1 (ssh.version = 2)
+        assertThat(sum.getFailed()).isEqualTo(0);
+        assertThat(sum.getUnknown()).isEqualTo(2); // NIST-AC-17, ISO-A.13.1.1-TELNET (telnet is unset/null)
+        assertThat(sum.getNotApplicable()).isEqualTo(17);
+        assertThat(sum.getError()).isEqualTo(0);
+        assertThat(sum.getPassed() + sum.getFailed() + sum.getUnknown() + sum.getNotApplicable() + sum.getError()).isEqualTo(sum.getTotalControls());
+        // applicableControls = 21 - 17 = 4; passed = 2; score = (2/4)*100 = 50.0
+        assertThat(audit.getComplianceScore()).isEqualTo(50.0);
+
+        org.bson.Document rawAuditDoc = mongoTemplate.getCollection("audits")
+                .find(new org.bson.Document("_id", audit.getId())).first();
+        System.out.println("=== RAW PERSISTED JUNIPER COMPLIANT AUDIT DOCUMENT ===");
+        System.out.println(rawAuditDoc != null ? rawAuditDoc.toJson() : "null");
     }
 }

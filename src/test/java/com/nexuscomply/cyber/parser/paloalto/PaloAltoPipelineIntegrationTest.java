@@ -208,11 +208,12 @@ class PaloAltoPipelineIntegrationTest {
         System.out.println(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(normDoc));
 
         assertThat(auditDoc.getSummary().getTotalControls()).isEqualTo(21);
-        assertThat(auditDoc.getSummary().getNotApplicable()).isEqualTo(21);
-        assertThat(auditDoc.getSummary().getPassed()).isEqualTo(0);
+        assertThat(auditDoc.getSummary().getNotApplicable()).isEqualTo(17);
+        assertThat(auditDoc.getSummary().getPassed()).isEqualTo(2);
         assertThat(auditDoc.getSummary().getFailed()).isEqualTo(0);
+        assertThat(auditDoc.getSummary().getUnknown()).isEqualTo(2);
         assertThat(auditDoc.getSummary().getError()).isEqualTo(0);
-        assertThat(auditDoc.getComplianceScore()).isNull();
+        assertThat(auditDoc.getComplianceScore()).isEqualTo(50.0);
         List<String> expectedFrameworkIds = frameworkRepository.findAll().stream()
                 .map(FrameworkDocument::getId)
                 .toList();
@@ -221,7 +222,7 @@ class PaloAltoPipelineIntegrationTest {
     }
 
     @Test
-    @DisplayName("Pipeline Integration: PAN-OS XML running-config export fixture with all 3 frameworks seeded -> 21 notApplicable, complianceScore null")
+    @DisplayName("Pipeline Integration: PAN-OS XML running-config export fixture with all 3 frameworks seeded -> 17 notApplicable, 2 passed, 2 unknown")
     void testPipelineIntegration_PanOsXmlFormatFixture() throws Exception {
         // Seed all 21 rules across CIS, NIST, ISO
         cisSeeder.seed();
@@ -326,14 +327,118 @@ class PaloAltoPipelineIntegrationTest {
         System.out.println(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(normDoc));
 
         assertThat(auditDoc.getSummary().getTotalControls()).isEqualTo(21);
-        assertThat(auditDoc.getSummary().getNotApplicable()).isEqualTo(21);
-        assertThat(auditDoc.getSummary().getPassed()).isEqualTo(0);
+        assertThat(auditDoc.getSummary().getNotApplicable()).isEqualTo(17);
+        assertThat(auditDoc.getSummary().getPassed()).isEqualTo(2);
         assertThat(auditDoc.getSummary().getFailed()).isEqualTo(0);
+        assertThat(auditDoc.getSummary().getUnknown()).isEqualTo(2);
         assertThat(auditDoc.getSummary().getError()).isEqualTo(0);
+        assertThat(auditDoc.getComplianceScore()).isEqualTo(50.0);
         List<String> expectedFrameworkIds = frameworkRepository.findAll().stream()
                 .map(FrameworkDocument::getId)
                 .toList();
         assertThat(expectedFrameworkIds).hasSize(3);
         assertThat(auditDoc.getFrameworkIds()).containsExactlyInAnyOrderElementsOf(expectedFrameworkIds);
+    }
+
+    @Test
+    @DisplayName("Palo Alto deliberate-violation config (telnet enabled) -> FAIL findings on security.telnet.enabled, remediation plan generated")
+    void testPaloAltoDeliberateViolationConfig() throws Exception {
+        cisSeeder.seed();
+        nistSeeder.seed();
+        isoSeeder.seed();
+
+        String violationConfig = String.join("\n",
+                "set deviceconfig system service disable-telnet no",
+                "set network profiles interface-management-profile mgt-profile ssh yes",
+                "set network profiles interface-management-profile mgt-profile https yes",
+                "set network interface ethernet ethernet1/1 layer3 interface-management-profile mgt-profile",
+                "set deviceconfig system snmp-setting access-setting version v2c snmp-community-string public",
+                "set shared log-settings syslog SIEM-Profile server SIEM-Collector server 10.10.10.50",
+                "set shared log-settings system match-list Forward-System send-syslog SIEM-Profile",
+                "set deviceconfig system ntp-servers primary-ntp-server ntp-server-address 10.0.0.1",
+                "set shared authentication-profile RADIUS-AUTH method radius",
+                "set deviceconfig system authentication-profile RADIUS-AUTH"
+        );
+
+        String deviceId = "device-pa-viol";
+        String configurationId = "cfg-pa-viol";
+
+        Audit audit = auditOrchestrationService.startAudit(
+                deviceId,
+                configurationId,
+                "v1.0",
+                violationConfig
+        );
+
+        assertThat(audit).isNotNull();
+        assertThat(audit.getStatus()).isEqualTo("COMPLETED");
+
+        AuditDocument auditDoc = auditRepository.findById(audit.getId()).orElseThrow();
+        assertThat(auditDoc.getSummary().getTotalControls()).isEqualTo(21);
+        assertThat(auditDoc.getSummary().getNotApplicable()).isEqualTo(17);
+        assertThat(auditDoc.getSummary().getPassed()).isEqualTo(0);
+        assertThat(auditDoc.getSummary().getFailed()).isEqualTo(2);
+        assertThat(auditDoc.getSummary().getUnknown()).isEqualTo(2);
+        assertThat(auditDoc.getSummary().getError()).isEqualTo(0);
+        assertThat(auditDoc.getSummary().getPassed() + auditDoc.getSummary().getFailed() + auditDoc.getSummary().getUnknown() + auditDoc.getSummary().getNotApplicable() + auditDoc.getSummary().getError()).isEqualTo(21);
+        assertThat(auditDoc.getComplianceScore()).isEqualTo(0.0);
+
+        List<FindingDocument> findings = findingRepository.findByDeviceId(deviceId);
+        assertThat(findings).hasSize(2);
+        assertThat(findings).allMatch(f -> "security.telnet.enabled".equals(f.getCanonicalField()));
+        assertThat(findings).allMatch(f -> Boolean.FALSE.equals(f.getExpected()));
+        assertThat(findings).allMatch(f -> Boolean.TRUE.equals(f.getActual()));
+
+        // Confirm Evidence exists for each finding
+        for (FindingDocument f : findings) {
+            assertThat(f.getEvidenceIds()).isNotEmpty();
+            for (String evId : f.getEvidenceIds()) {
+                EvidenceDocument ev = evidenceRepository.findById(evId).orElse(null);
+                assertThat(ev).isNotNull();
+                assertThat(ev.getSource().getRawText()).contains("disable-telnet no");
+            }
+        }
+
+        System.out.println("=== RAW PERSISTED PALO ALTO DELIBERATE-VIOLATION FINDINGS ===");
+        for (FindingDocument f : findings) {
+            org.bson.Document rawFinding = mongoTemplate.getCollection("findings")
+                    .find(new org.bson.Document("_id", f.getId())).first();
+            System.out.println(rawFinding != null ? rawFinding.toJson() : "null");
+        }
+
+        System.out.println("=== RAW PERSISTED PALO ALTO DELIBERATE-VIOLATION AUDIT DOCUMENT ===");
+        org.bson.Document rawAuditDoc = mongoTemplate.getCollection("audits")
+                .find(new org.bson.Document("_id", audit.getId())).first();
+        System.out.println(rawAuditDoc != null ? rawAuditDoc.toJson() : "null");
+
+        // Create remediation plan for Palo Alto telnet finding
+        com.nexuscomply.cyber.remediation.persistence.RemediationTemplateRepository tplRepo =
+                new MongoRepositoryFactory(mongoTemplate).getRepository(com.nexuscomply.cyber.remediation.persistence.RemediationTemplateRepository.class);
+        com.nexuscomply.cyber.remediation.persistence.RemediationPlanRepository planRepo =
+                new MongoRepositoryFactory(mongoTemplate).getRepository(com.nexuscomply.cyber.remediation.persistence.RemediationPlanRepository.class);
+        com.nexuscomply.cyber.remediation.seeder.RemediationTemplateSeeder tplSeeder =
+                new com.nexuscomply.cyber.remediation.seeder.RemediationTemplateSeeder(tplRepo);
+        tplSeeder.seed();
+
+        com.nexuscomply.cyber.remediation.service.RemediationPlanServiceImpl planService =
+                new com.nexuscomply.cyber.remediation.service.RemediationPlanServiceImpl(planRepo, tplRepo, normalizedConfigRepository, findingRepository);
+
+        com.nexuscomply.cyber.finding.Finding telnetFinding = new com.nexuscomply.cyber.finding.Finding();
+        telnetFinding.setId(findings.get(0).getId());
+        telnetFinding.setDeviceId(deviceId);
+        telnetFinding.setConfigurationId(configurationId);
+        telnetFinding.setCanonicalField("security.telnet.enabled");
+        telnetFinding.setExpected(false);
+        telnetFinding.setActual(true);
+
+        com.nexuscomply.cyber.remediation.model.RemediationPlan telnetPlan = planService.createPlanForFinding(telnetFinding);
+        assertThat(telnetPlan).isNotNull();
+        assertThat(telnetPlan.getStatus()).isEqualTo("PLANNED");
+        assertThat(telnetPlan.getSteps().get(0).getCommand()).isEqualTo("set deviceconfig system service disable-telnet yes");
+
+        org.bson.Document rawPlan = mongoTemplate.getCollection("remediation_plans")
+                .find(new org.bson.Document("findingId", telnetFinding.getId())).first();
+        System.out.println("=== RAW PERSISTED PALO ALTO TELNET REMEDIATION PLAN ===");
+        System.out.println(rawPlan != null ? rawPlan.toJson() : "null");
     }
 }

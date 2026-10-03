@@ -712,10 +712,10 @@ class AuditOrchestrationIntegrationTest {
 
         assertThat(audit.getStatus()).isEqualTo(AuditStatus.COMPLETED.name());
         assertThat(audit.getSummary().getTotalControls()).isEqualTo(21);
-        assertThat(audit.getSummary().getPassed()).isEqualTo(0);
+        assertThat(audit.getSummary().getPassed()).isEqualTo(4);
         assertThat(audit.getSummary().getFailed()).isEqualTo(0);
-        assertThat(audit.getSummary().getNotApplicable()).isEqualTo(21);
-        assertThat(audit.getComplianceScore()).isNull();
+        assertThat(audit.getSummary().getNotApplicable()).isEqualTo(17);
+        assertThat(audit.getComplianceScore()).isEqualTo(100.0);
     }
 
     @Test
@@ -751,13 +751,14 @@ class AuditOrchestrationIntegrationTest {
                 .isEqualTo(sumA.getPassed() + sumA.getFailed() + sumA.getUnknown() + sumA.getNotApplicable() + sumA.getError());
         assertThat(sumA.getNotApplicable()).isEqualTo(0);
 
-        // Scenario B: All not-applicable (Cisco without version line -> osVersion UNKNOWN -> 0 applicable rules)
+        // Scenario B: 17 not-applicable for 17.x-specific rules (Cisco without version line -> osVersion UNKNOWN -> 17 notApplicable, 4 version-agnostic rules pass)
         Audit auditAllNotApplicable = auditOrchestrationService.startAudit("dev-nonapp-01", "cfg-nonapp-001", "ver-nonapp-001", ciscoConfigNoVersion);
         AuditSummary sumB = auditAllNotApplicable.getSummary();
         assertThat(sumB.getTotalControls())
                 .isEqualTo(sumB.getPassed() + sumB.getFailed() + sumB.getUnknown() + sumB.getNotApplicable() + sumB.getError());
-        assertThat(sumB.getNotApplicable()).isEqualTo(21);
-        assertThat(auditAllNotApplicable.getComplianceScore()).isNull();
+        assertThat(sumB.getNotApplicable()).isEqualTo(17);
+        assertThat(sumB.getPassed()).isEqualTo(4);
+        assertThat(auditAllNotApplicable.getComplianceScore()).isEqualTo(100.0);
 
         // Scenario C: Rule evaluator exception -> error++
         RuleEvaluator throwingEvaluator = (canonical, rule) -> {

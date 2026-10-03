@@ -225,24 +225,25 @@ public class DriftDetectionServiceImpl implements DriftDetectionService {
         List<String> affectedFindingIds = resolveAffectedFindings(deviceId, beforeDoc.getConfigurationId(), changedFieldPaths);
 
         // Overall Impact determination:
-        // risk up INCREASED; down DECREASED; equal with any UNKNOWN_IMPACT UNKNOWN;
-        // equal with both IMPROVED and DEGRADED MIXED; zero changes NO_CHANGE.
+        // zero changes -> NO_CHANGE; any UNKNOWN_IMPACT -> UNKNOWN;
+        // otherwise risk up INCREASED, down DECREASED, equal ->
+        // MIXED / INCREASED (degraded only) / DECREASED (improved only) / NO_CHANGE.
         String impact;
+        boolean hasUnknown = changes.stream().anyMatch(c -> DriftClassification.UNKNOWN_IMPACT.name().equals(c.getClassification()));
         if (changes.isEmpty()) {
             impact = "NO_CHANGE";
+        } else if (hasUnknown) {
+            impact = "UNKNOWN";
         } else if (totalRiskAfter > totalRiskBefore) {
             impact = "INCREASED";
         } else if (totalRiskAfter < totalRiskBefore) {
             impact = "DECREASED";
         } else {
-            // totalRiskAfter == totalRiskBefore
-            boolean hasUnknown = changes.stream().anyMatch(c -> DriftClassification.UNKNOWN_IMPACT.name().equals(c.getClassification()));
+            // totalRiskAfter == totalRiskBefore (and no UNKNOWN_IMPACT)
             boolean hasImproved = changes.stream().anyMatch(c -> DriftClassification.IMPROVED.name().equals(c.getClassification()));
             boolean hasDegraded = changes.stream().anyMatch(c -> DriftClassification.DEGRADED.name().equals(c.getClassification()));
 
-            if (hasUnknown) {
-                impact = "UNKNOWN";
-            } else if (hasImproved && hasDegraded) {
+            if (hasImproved && hasDegraded) {
                 impact = "MIXED";
             } else if (hasDegraded) {
                 impact = "INCREASED";

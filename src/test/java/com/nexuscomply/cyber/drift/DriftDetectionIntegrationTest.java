@@ -572,7 +572,7 @@ class DriftDetectionIntegrationTest {
     }
 
     @Test
-    @DisplayName("A5.2: Drift on telnet true -> null (REMOVED changeType, UNKNOWN_IMPACT, risk decreased)")
+    @DisplayName("A5.2: Drift on telnet true -> null (REMOVED changeType, UNKNOWN_IMPACT, risk decreased 70->0, impact UNKNOWN)")
     void testTelnetDrift_TrueToNull() {
         cisSeeder.seed();
 
@@ -611,10 +611,64 @@ class DriftDetectionIntegrationTest {
         assertThat(change.getClassification()).isEqualTo(DriftClassification.UNKNOWN_IMPACT.name());
         assertThat(event.getRiskBefore()).isEqualTo(70);
         assertThat(event.getRiskAfter()).isEqualTo(0);
-        assertThat(event.getImpact()).isEqualTo("DECREASED");
+        assertThat(event.getImpact()).isEqualTo("UNKNOWN");
 
         Document rawDoc = mongoTemplate.getCollection("drift_events").find(new Document("deviceId", deviceId)).first();
         System.out.println("=== TRUE TO NULL PERSISTED DRIFT EVENT ===");
+        System.out.println(rawDoc != null ? rawDoc.toJson() : "null");
+    }
+
+    @Test
+    @DisplayName("A5.2b: Telnet true->false (IMPROVED) plus field with no rule (security.https.enabled) yields impact UNKNOWN despite risk decrease 70->0")
+    void testTelnetImproved_PlusFieldWithNoRule_YieldsUnknownImpact() {
+        cisSeeder.seed();
+
+        String deviceId = "dev-drift-improved-plus-norule";
+        NormalizedConfigurationDocument docA = new NormalizedConfigurationDocument();
+        docA.setId("norm-ipnr-1");
+        docA.setDeviceId(deviceId);
+        docA.setConfigurationId("cfg-ipnr-1");
+        docA.setVersionId("ver-ipnr-1");
+        docA.setVendor("Cisco");
+        docA.setPlatform("IOS-XE");
+        CanonicalSecurityModel canonA = new CanonicalSecurityModel();
+        canonA.setTelnet(true);
+        canonA.setHttps(false);
+        docA.setCanonical(canonA);
+        normalizedConfigRepository.save(docA);
+
+        NormalizedConfigurationDocument docB = new NormalizedConfigurationDocument();
+        docB.setId("norm-ipnr-2");
+        docB.setDeviceId(deviceId);
+        docB.setConfigurationId("cfg-ipnr-2");
+        docB.setVersionId("ver-ipnr-2");
+        docB.setVendor("Cisco");
+        docB.setPlatform("IOS-XE");
+        CanonicalSecurityModel canonB = new CanonicalSecurityModel();
+        canonB.setTelnet(false);
+        canonB.setHttps(true);
+        docB.setCanonical(canonB);
+        normalizedConfigRepository.save(docB);
+
+        DriftEvent event = driftDetectionService.detectDrift(docA, docB);
+        assertThat(event.getChanges()).hasSize(2);
+
+        DriftChange telnetChange = event.getChanges().stream()
+                .filter(c -> "security.telnet.enabled".equals(c.getCanonicalField()))
+                .findFirst().orElseThrow();
+        assertThat(telnetChange.getClassification()).isEqualTo(DriftClassification.IMPROVED.name());
+
+        DriftChange httpsChange = event.getChanges().stream()
+                .filter(c -> "security.https.enabled".equals(c.getCanonicalField()))
+                .findFirst().orElseThrow();
+        assertThat(httpsChange.getClassification()).isEqualTo(DriftClassification.UNKNOWN_IMPACT.name());
+
+        assertThat(event.getRiskBefore()).isEqualTo(70);
+        assertThat(event.getRiskAfter()).isEqualTo(0);
+        assertThat(event.getImpact()).isEqualTo("UNKNOWN");
+
+        Document rawDoc = mongoTemplate.getCollection("drift_events").find(new Document("deviceId", deviceId)).first();
+        System.out.println("=== TELNET IMPROVED PLUS NO-RULE FIELD PERSISTED DRIFT EVENT ===");
         System.out.println(rawDoc != null ? rawDoc.toJson() : "null");
     }
 
@@ -844,9 +898,11 @@ class DriftDetectionIntegrationTest {
     }
 
     @Test
-    @DisplayName("A5.8: Cisco-only rules evaluated against Juniper device yield UNKNOWN_IMPACT")
-    void testCiscoOnlyRulesOnJuniperDevice_YieldsUnknownImpact() {
-        cisSeeder.seed(); // Seeded CIS rules have applicableVendors = ["Cisco"]
+    @DisplayName("A5.8: Vendor-neutral rules evaluated against Juniper device yield DEGRADED and INCREASED impact")
+    void testCiscoRulesOnJuniperDevice_NowRuleCovered() {
+        cisSeeder.seed();
+        nistSeeder.seed();
+        isoSeeder.seed();
 
         String deviceId = "dev-juniper-drift-01";
         NormalizedConfigurationDocument docA = new NormalizedConfigurationDocument();
@@ -877,10 +933,10 @@ class DriftDetectionIntegrationTest {
         assertThat(event.getChanges()).hasSize(1);
         DriftChange change = event.getChanges().get(0);
         assertThat(change.getCanonicalField()).isEqualTo("security.telnet.enabled");
-        assertThat(change.getClassification()).isEqualTo(DriftClassification.UNKNOWN_IMPACT.name());
+        assertThat(change.getClassification()).isEqualTo(DriftClassification.DEGRADED.name());
         assertThat(event.getRiskBefore()).isEqualTo(0);
-        assertThat(event.getRiskAfter()).isEqualTo(0);
-        assertThat(event.getImpact()).isEqualTo("UNKNOWN");
+        assertThat(event.getRiskAfter()).isEqualTo(70);
+        assertThat(event.getImpact()).isEqualTo("INCREASED");
 
         Document rawDoc = mongoTemplate.getCollection("drift_events").find(new Document("deviceId", deviceId)).first();
         System.out.println("=== JUNIPER TELNET PERSISTED DRIFT EVENT ===");

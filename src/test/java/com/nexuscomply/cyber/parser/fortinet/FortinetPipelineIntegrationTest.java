@@ -6,6 +6,7 @@ import com.mongodb.client.MongoClients;
 import com.nexuscomply.cyber.audit.Audit;
 import com.nexuscomply.cyber.audit.AuditOrchestrationService;
 import com.nexuscomply.cyber.audit.AuditOrchestrationServiceImpl;
+import com.nexuscomply.cyber.audit.AuditSummary;
 import com.nexuscomply.cyber.audit.persistence.AuditDocument;
 import com.nexuscomply.cyber.audit.persistence.AuditRepository;
 import com.nexuscomply.cyber.compliance.DefaultRuleApplicabilityChecker;
@@ -264,45 +265,171 @@ class FortinetPipelineIntegrationTest {
                 .toList();
         assertThat(expectedFrameworkIds).hasSize(3);
 
-        // 6. Confirm vendor isolation, framework tracking, and complianceScore == null regression fix
+        // 6. Confirm vendor-neutral rule coverage for telnet and SSH version
         assertThat(audit.getStatus()).isEqualTo("COMPLETED");
         assertThat(audit.getFrameworkIds()).containsExactlyInAnyOrderElementsOf(expectedFrameworkIds);
-        assertThat(audit.getSummary()).isNotNull();
-        assertThat(audit.getSummary().getTotalControls()).isEqualTo(21);
-        assertThat(audit.getSummary().getPassed()).isEqualTo(0);
-        assertThat(audit.getSummary().getFailed()).isEqualTo(0);
-        assertThat(audit.getSummary().getNotApplicable()).isEqualTo(21);
+        AuditSummary sum = audit.getSummary();
+        assertThat(sum).isNotNull();
+        assertThat(sum.getTotalControls()).isEqualTo(21);
+        assertThat(sum.getPassed()).isEqualTo(0);
+        assertThat(sum.getFailed()).isEqualTo(2); // NIST-AC-17, ISO-A.13.1.1-TELNET
+        assertThat(sum.getUnknown()).isEqualTo(2); // NIST-SC-8, ISO-A.10.1.1 (ssh.version is null/gap)
+        assertThat(sum.getNotApplicable()).isEqualTo(17);
+        assertThat(sum.getError()).isEqualTo(0);
+        assertThat(sum.getPassed() + sum.getFailed() + sum.getUnknown() + sum.getNotApplicable() + sum.getError()).isEqualTo(sum.getTotalControls());
+        assertThat(audit.getComplianceScore()).isEqualTo(0.0);
 
-        // CRITICAL REGRESSION CHECK: zero applicable rules MUST yield complianceScore = null (N/A), NOT 100.0
-        assertThat(audit.getComplianceScore()).isNull();
-
-        // No findings or evidence should be created because no rules applied to Fortinet
+        // Exactly 2 findings on security.telnet.enabled (1 NIST, 1 ISO)
         List<FindingDocument> findings = findingRepository.findByAuditId(auditId);
-        assertThat(findings).isEmpty();
+        assertThat(findings).hasSize(2);
+        for (FindingDocument f : findings) {
+            assertThat(f.getCanonicalField()).isEqualTo("security.telnet.enabled");
+            assertThat(f.getComplianceStatus()).isEqualTo("FAIL");
+            assertThat(f.getEvidenceIds()).hasSize(1);
+            EvidenceDocument ev = evidenceRepository.findById(f.getEvidenceIds().get(0)).orElseThrow();
+            assertThat(ev.getFindingId()).isEqualTo(f.getId());
+        }
 
         List<EvidenceDocument> evidence = evidenceRepository.findByAuditId(auditId);
-        assertThat(evidence).isEmpty();
+        assertThat(evidence).hasSize(2);
 
         // 7. Verify persisted AuditDocument in MongoDB
         AuditDocument persistedAuditDoc = auditRepository.findById(auditId).orElseThrow();
         assertThat(persistedAuditDoc.getStatus()).isEqualTo("COMPLETED");
-        assertThat(persistedAuditDoc.getFrameworkIds()).containsExactlyInAnyOrderElementsOf(expectedFrameworkIds);
         assertThat(persistedAuditDoc.getSummary().getTotalControls()).isEqualTo(21);
-        assertThat(persistedAuditDoc.getSummary().getNotApplicable()).isEqualTo(21);
-        assertThat(persistedAuditDoc.getComplianceScore()).isNull();
+        assertThat(persistedAuditDoc.getSummary().getPassed()).isEqualTo(0);
+        assertThat(persistedAuditDoc.getSummary().getFailed()).isEqualTo(2);
+        assertThat(persistedAuditDoc.getSummary().getUnknown()).isEqualTo(2);
+        assertThat(persistedAuditDoc.getSummary().getNotApplicable()).isEqualTo(17);
+        assertThat(persistedAuditDoc.getComplianceScore()).isEqualTo(0.0);
 
-        // Print raw JSON outputs for verification proof
-        String rawNormDocJson = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(normDoc);
-        String rawAuditDocJson = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(persistedAuditDoc);
+        // Print raw persisted documents for surefire capture
+        org.bson.Document rawNistRule = mongoTemplate.getCollection("compliance_rules")
+                .find(new org.bson.Document("ruleCode", "NIST-AC-17")).first();
+        System.out.println("=== RAW PERSISTED RULE DOCUMENT (FORTINET APPLICABLE: NIST-AC-17) ===");
+        System.out.println(rawNistRule != null ? rawNistRule.toJson() : "null");
 
-        org.bson.Document rawDbDoc = mongoTemplate.getCollection("audits").find(new org.bson.Document("_id", auditId)).first();
-        String rawDbDocJson = rawDbDoc != null ? rawDbDoc.toJson(org.bson.json.JsonWriterSettings.builder().indent(true).build()) : "null";
+        for (int i = 0; i < findings.size(); i++) {
+            org.bson.Document rawFinding = mongoTemplate.getCollection("findings")
+                    .find(new org.bson.Document("_id", findings.get(i).getId())).first();
+            System.out.println("=== RAW PERSISTED FORTINET FINDING " + (i + 1) + " ===");
+            System.out.println(rawFinding != null ? rawFinding.toJson() : "null");
+        }
 
-        System.out.println("=== RAW FORTINET NORMALIZED CONFIGURATION DOCUMENT ===");
-        System.out.println(rawNormDocJson);
-        System.out.println("=== RAW FORTINET AUDIT DOCUMENT ===");
-        System.out.println(rawAuditDocJson);
-        System.out.println("=== RAW FORTINET AUDIT DOCUMENT FROM DB QUERY ===");
-        System.out.println(rawDbDocJson);
+        for (int i = 0; i < evidence.size(); i++) {
+            org.bson.Document rawEv = mongoTemplate.getCollection("evidence")
+                    .find(new org.bson.Document("_id", evidence.get(i).getId())).first();
+            System.out.println("=== RAW PERSISTED FORTINET EVIDENCE " + (i + 1) + " ===");
+            System.out.println(rawEv != null ? rawEv.toJson() : "null");
+        }
+
+        org.bson.Document rawAuditDoc = mongoTemplate.getCollection("audits")
+                .find(new org.bson.Document("_id", auditId)).first();
+        System.out.println("=== RAW PERSISTED FORTINET DELIBERATE VIOLATION AUDIT DOCUMENT ===");
+        System.out.println(rawAuditDoc != null ? rawAuditDoc.toJson() : "null");
+
+        // 8. Create remediation plan for Fortinet telnet finding
+        com.nexuscomply.cyber.remediation.persistence.RemediationTemplateRepository tplRepo =
+                new MongoRepositoryFactory(mongoTemplate).getRepository(com.nexuscomply.cyber.remediation.persistence.RemediationTemplateRepository.class);
+        com.nexuscomply.cyber.remediation.persistence.RemediationPlanRepository planRepo =
+                new MongoRepositoryFactory(mongoTemplate).getRepository(com.nexuscomply.cyber.remediation.persistence.RemediationPlanRepository.class);
+        com.nexuscomply.cyber.remediation.seeder.RemediationTemplateSeeder tplSeeder =
+                new com.nexuscomply.cyber.remediation.seeder.RemediationTemplateSeeder(tplRepo);
+        tplSeeder.seed();
+
+        com.nexuscomply.cyber.remediation.service.RemediationPlanServiceImpl planService =
+                new com.nexuscomply.cyber.remediation.service.RemediationPlanServiceImpl(planRepo, tplRepo, normalizedConfigRepository, findingRepository);
+
+        com.nexuscomply.cyber.finding.Finding telnetFinding = new com.nexuscomply.cyber.finding.Finding();
+        telnetFinding.setId(findings.get(0).getId());
+        telnetFinding.setDeviceId(deviceId);
+        telnetFinding.setConfigurationId(configurationId);
+        telnetFinding.setCanonicalField("security.telnet.enabled");
+        telnetFinding.setExpected(false);
+        telnetFinding.setActual(true);
+
+        com.nexuscomply.cyber.remediation.model.RemediationPlan telnetPlan = planService.createPlanForFinding(telnetFinding);
+        assertThat(telnetPlan).isNotNull();
+        assertThat(telnetPlan.getStatus()).isEqualTo("PLANNED");
+        assertThat(telnetPlan.getSteps().get(2).getCommand()).isEqualTo("unselect allowaccess telnet");
+
+        org.bson.Document rawPlan = mongoTemplate.getCollection("remediation_plans")
+                .find(new org.bson.Document("findingId", telnetFinding.getId())).first();
+        System.out.println("=== RAW PERSISTED FORTINET TELNET REMEDIATION PLAN ===");
+        System.out.println(rawPlan != null ? rawPlan.toJson() : "null");
+
+        // Demonstrate Fortinet SSH version gap handling
+        com.nexuscomply.cyber.finding.Finding sshGapFinding = new com.nexuscomply.cyber.finding.Finding();
+        sshGapFinding.setId("find-fortinet-ssh-gap");
+        sshGapFinding.setDeviceId(deviceId);
+        sshGapFinding.setConfigurationId(configurationId);
+        sshGapFinding.setCanonicalField("security.ssh.version");
+        sshGapFinding.setExpected(2);
+        sshGapFinding.setActual(null);
+
+        com.nexuscomply.cyber.remediation.model.RemediationPlan gapPlan = planService.createPlanForFinding(sshGapFinding);
+        assertThat(gapPlan).isNotNull();
+        assertThat(gapPlan.getStatus()).isEqualTo("PLANNED");
+        assertThat(gapPlan.getSteps()).hasSize(1);
+        assertThat(gapPlan.getSteps().get(0).getAction()).isEqualTo("PLATFORM_GAP_NOTICE");
+        assertThat(gapPlan.getSteps().get(0).getCommand()).isEqualTo("NO_COMMAND");
+        assertThat(gapPlan.getSteps().get(0).getDescription()).isEqualTo("not configurable on this platform");
+
+        org.bson.Document rawGapPlan = mongoTemplate.getCollection("remediation_plans")
+                .find(new org.bson.Document("findingId", sshGapFinding.getId())).first();
+        System.out.println("=== RAW PERSISTED FORTINET SSH GAP REMEDIATION PLAN ===");
+        System.out.println(rawGapPlan != null ? rawGapPlan.toJson() : "null");
+    }
+
+    @Test
+    @DisplayName("Compliant Fortinet config (telnet unset) -> UNKNOWN on telnet and SSH version, complianceScore null")
+    void testFortinetCompliantConfig() {
+        cisSeeder.seed();
+        nistSeeder.seed();
+        isoSeeder.seed();
+
+        String compliantFortinetConfig = String.join("\n",
+                "config system global",
+                "    set hostname FW-BRANCH-CLEAN",
+                "end",
+                "config system interface",
+                "    edit port1",
+                "        set ip 192.168.1.1 255.255.255.0",
+                "        set allowaccess ping https ssh",
+                "    next",
+                "end",
+                "config system snmp sysinfo",
+                "    set status enable",
+                "end",
+                "config log syslogd setting",
+                "    set status enable",
+                "    set server 10.0.0.100",
+                "end",
+                "config log memory setting",
+                "    set status enable",
+                "end",
+                "config system ntp",
+                "    set ntpsync enable",
+                "end"
+        );
+
+        Audit audit = auditOrchestrationService.startAudit("fortinet-clean-01", "cfg-forti-clean", "ver-forti-clean", compliantFortinetConfig);
+        assertThat(audit.getStatus()).isEqualTo("COMPLETED");
+
+        AuditSummary sum = audit.getSummary();
+        assertThat(sum.getTotalControls()).isEqualTo(21);
+        assertThat(sum.getPassed()).isEqualTo(0);
+        assertThat(sum.getFailed()).isEqualTo(0);
+        assertThat(sum.getUnknown()).isEqualTo(4); // 2 telnet unset + 2 ssh version gap
+        assertThat(sum.getNotApplicable()).isEqualTo(17);
+        assertThat(sum.getError()).isEqualTo(0);
+        assertThat(sum.getPassed() + sum.getFailed() + sum.getUnknown() + sum.getNotApplicable() + sum.getError()).isEqualTo(sum.getTotalControls());
+        // Clean run with passed+failed == 0 yields complianceScore = null
+        assertThat(audit.getComplianceScore()).isNull();
+
+        org.bson.Document rawAuditDoc = mongoTemplate.getCollection("audits")
+                .find(new org.bson.Document("_id", audit.getId())).first();
+        System.out.println("=== RAW PERSISTED FORTINET COMPLIANT AUDIT DOCUMENT ===");
+        System.out.println(rawAuditDoc != null ? rawAuditDoc.toJson() : "null");
     }
 }

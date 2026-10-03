@@ -130,7 +130,7 @@ public class RemediationTemplateSeeder {
                     "Cisco", "IOS-XE", "logging.localLogging",
                     "Configure Local Buffered Logging (Cisco)",
                     List.of("logging buffered <size>"),
-                    "Representative example beyond parser regex: Allocate internal memory buffer to store local logging entries.",
+                    "[UNCONFIRMED] Representative example beyond parser regex: Allocate internal memory buffer to store local logging entries.",
                     List.of("Sufficient free device RAM"),
                     List.of("show logging"),
                     "LOW", CommandType.REPRESENTATIVE_EXAMPLE, null
@@ -146,13 +146,13 @@ public class RemediationTemplateSeeder {
             ),
 
             // ==========================================
-            // JUNIPER (JUNOS) - 7 Canonical Fields
+            // JUNIPER (JUNOS) - 7 Canonical Fields (all UNCONFIRMED)
             // ==========================================
             new TemplateDefinition(
                     "Juniper", "JUNOS", "authentication.aaa",
                     "Configure System Authentication Order (Juniper)",
                     List.of("set system authentication-order [ radius password ]"),
-                    "Representative example: Configure RADIUS fallback to local password. Requires configured radius-server block.",
+                    "[UNCONFIRMED] Representative example: Configure RADIUS fallback to local password. Requires configured radius-server block.",
                     List.of("system radius-server configured with IP and secret"),
                     List.of("show configuration system authentication-order"),
                     "MEDIUM", CommandType.REPRESENTATIVE_EXAMPLE, null
@@ -161,7 +161,7 @@ public class RemediationTemplateSeeder {
                     "Juniper", "JUNOS", "security.telnet.enabled",
                     "Disable Telnet Service (Juniper)",
                     List.of("delete system services telnet"),
-                    "Disable Telnet daemon under system services on Junos.",
+                    "[UNCONFIRMED] Disable Telnet daemon under system services on Junos.",
                     List.of("SSH service must remain operational under system services"),
                     List.of("show configuration system services telnet"),
                     "LOW", CommandType.DERIVABLE_REGEX, null
@@ -170,7 +170,7 @@ public class RemediationTemplateSeeder {
                     "Juniper", "JUNOS", "security.ssh.version",
                     "Enforce SSH Protocol Version 2 (Juniper)",
                     List.of("set system services ssh protocol-version v2"),
-                    "Enforce SSH protocol version 2 on Junos.",
+                    "[UNCONFIRMED] Enforce SSH protocol version 2 on Junos.",
                     List.of("system services ssh configured"),
                     List.of("show configuration system services ssh"),
                     "LOW", CommandType.DERIVABLE_REGEX, null
@@ -179,7 +179,7 @@ public class RemediationTemplateSeeder {
                     "Juniper", "JUNOS", "security.snmp.version",
                     "Configure SNMPv3 USM Local User (Juniper)",
                     List.of("set snmp v3 usm local-user <name> ..."),
-                    "Representative example beyond parser regex: Configure SNMPv3 USM user with authentication and privacy credentials.",
+                    "[UNCONFIRMED] Representative example beyond parser regex: Configure SNMPv3 USM user with authentication and privacy credentials.",
                     List.of("SNMP service enabled"),
                     List.of("show configuration snmp v3"),
                     "MEDIUM", CommandType.REPRESENTATIVE_EXAMPLE, null
@@ -188,7 +188,7 @@ public class RemediationTemplateSeeder {
                     "Juniper", "JUNOS", "logging.syslog",
                     "Configure Remote Syslog Host (Juniper)",
                     List.of("set system syslog host <ip> any any"),
-                    "Representative example beyond parser regex: Send system logs to remote syslog server.",
+                    "[UNCONFIRMED] Representative example beyond parser regex: Send system logs to remote syslog server.",
                     List.of("Syslog destination reachable"),
                     List.of("show configuration system syslog host"),
                     "LOW", CommandType.REPRESENTATIVE_EXAMPLE, null
@@ -197,7 +197,7 @@ public class RemediationTemplateSeeder {
                     "Juniper", "JUNOS", "logging.localLogging",
                     "Configure Local Syslog File Logging (Juniper)",
                     List.of("set system syslog file messages any notice"),
-                    "Configure system messages log file for local event recording on Junos.",
+                    "[UNCONFIRMED] Configure system messages log file for local event recording on Junos.",
                     List.of("Sufficient disk space under /var/log"),
                     List.of("show configuration system syslog file messages"),
                     "LOW", CommandType.DERIVABLE_REGEX, null
@@ -206,20 +206,20 @@ public class RemediationTemplateSeeder {
                     "Juniper", "JUNOS", "ntp.configured",
                     "Configure NTP Server (Juniper)",
                     List.of("set system ntp server <ip>"),
-                    "Representative example beyond parser regex: Configure external NTP server for clock synchronization on Junos.",
+                    "[UNCONFIRMED] Representative example beyond parser regex: Configure external NTP server for clock synchronization on Junos.",
                     List.of("NTP server reachable on UDP port 123"),
                     List.of("show ntp status", "show ntp associations"),
                     "LOW", CommandType.REPRESENTATIVE_EXAMPLE, null
             ),
 
             // ==========================================
-            // FORTINET (FortiOS) - 7 Canonical Fields
+            // FORTINET (FortiOS) - 7 Canonical Fields (6 UNCONFIRMED, 1 PLATFORM_GAP)
             // ==========================================
             new TemplateDefinition(
                     "Fortinet", "FortiOS", "authentication.aaa",
                     "Configure RADIUS AAA Server (Fortinet)",
                     List.of("config user radius", "edit <name>", "set server <ip>", "set secret <key>", "next", "end"),
-                    "Representative multi-step example beyond parser regex: Configure RADIUS server profile on FortiOS.",
+                    "[UNCONFIRMED] Representative multi-step example beyond parser regex: Configure RADIUS server profile on FortiOS.",
                     List.of("RADIUS server IP and pre-shared secret ready"),
                     List.of("show user radius"),
                     "MEDIUM", CommandType.REPRESENTATIVE_EXAMPLE, null
@@ -227,8 +227,8 @@ public class RemediationTemplateSeeder {
             new TemplateDefinition(
                     "Fortinet", "FortiOS", "security.telnet.enabled",
                     "Disable Telnet on Interface Allowaccess (Fortinet)",
-                    List.of("config system interface", "edit <port>", "unset allowaccess", "set allowaccess ping https ssh", "next", "end"),
-                    "Remove telnet from allowaccess list on administrative interfaces, maintaining secure access.",
+                    List.of("config system interface", "edit <port>", "unselect allowaccess telnet", "next", "end"),
+                    "[UNCONFIRMED] Remove telnet from allowaccess list on administrative interfaces without removing other permitted protocols via unselect.",
                     List.of("HTTPS or SSH administrative connectivity confirmed"),
                     List.of("show system interface"),
                     "MEDIUM", CommandType.DERIVABLE_REGEX, null
@@ -246,7 +246,7 @@ public class RemediationTemplateSeeder {
                     "Fortinet", "FortiOS", "security.snmp.version",
                     "Configure SNMPv3 User (Fortinet)",
                     List.of("config system snmp user", "edit <name>", "set security-level auth-priv", "next", "end"),
-                    "Representative example beyond parser regex: Configure SNMPv3 user with auth-priv security level.",
+                    "[UNCONFIRMED] Representative example beyond parser regex: Configure SNMPv3 user with auth-priv security level.",
                     List.of("SNMP agent enabled under config system snmp sysinfo"),
                     List.of("show system snmp user"),
                     "MEDIUM", CommandType.REPRESENTATIVE_EXAMPLE, null
@@ -255,7 +255,7 @@ public class RemediationTemplateSeeder {
                     "Fortinet", "FortiOS", "logging.syslog",
                     "Configure Remote Syslog Logging (Fortinet)",
                     List.of("config log syslogd setting", "set status enable", "set server <ip>", "end"),
-                    "Representative example beyond parser regex: Enable remote syslog daemon forwarding.",
+                    "[UNCONFIRMED] Representative example beyond parser regex: Enable remote syslog daemon forwarding.",
                     List.of("Syslog server reachable"),
                     List.of("get log syslogd setting"),
                     "LOW", CommandType.REPRESENTATIVE_EXAMPLE, null
@@ -264,7 +264,7 @@ public class RemediationTemplateSeeder {
                     "Fortinet", "FortiOS", "logging.localLogging",
                     "Enable Local Memory Logging (Fortinet)",
                     List.of("config log memory setting", "set status enable", "end"),
-                    "Enable internal memory buffer logging on FortiOS.",
+                    "[UNCONFIRMED] Enable internal memory buffer logging on FortiOS.",
                     List.of("Device has sufficient available memory"),
                     List.of("get log memory setting"),
                     "LOW", CommandType.DERIVABLE_REGEX, null
@@ -273,20 +273,20 @@ public class RemediationTemplateSeeder {
                     "Fortinet", "FortiOS", "ntp.configured",
                     "Enable NTP Synchronization (Fortinet)",
                     List.of("config system ntp", "set ntpsync enable", "end"),
-                    "Representative example beyond parser regex: Enable NTP synchronization on FortiOS. Full config requires ntpserver sub-block.",
+                    "[UNCONFIRMED] Representative example beyond parser regex: Enable NTP synchronization on FortiOS. Full config requires ntpserver sub-block.",
                     List.of("NTP server or FortiGuard NTP connectivity available"),
                     List.of("show system ntp"),
                     "LOW", CommandType.REPRESENTATIVE_EXAMPLE, null
             ),
 
             // ==========================================
-            // PALO ALTO (PAN-OS) - 7 Canonical Fields
+            // PALO ALTO (PAN-OS) - 7 Canonical Fields (5 UNCONFIRMED, 1 CONFIRMED, 1 PLATFORM_GAP)
             // ==========================================
             new TemplateDefinition(
                     "Palo Alto", "PAN-OS", "authentication.aaa",
                     "Configure RADIUS Authentication Profile (Palo Alto)",
                     List.of("set shared authentication-profile <name> method radius", "set mgt-config users <admin> authentication-profile <name>"),
-                    "Two-step configuration directly matching parser detection: Configure shared RADIUS profile and assign to management user.",
+                    "[UNCONFIRMED] Two-step configuration directly matching parser detection: Configure shared RADIUS profile and assign to management user.",
                     List.of("RADIUS server profile defined under shared radius"),
                     List.of("show shared authentication-profile"),
                     "MEDIUM", CommandType.DERIVABLE_REGEX, null
@@ -295,7 +295,7 @@ public class RemediationTemplateSeeder {
                     "Palo Alto", "PAN-OS", "security.telnet.enabled",
                     "Disable Telnet Service (Palo Alto)",
                     List.of("set deviceconfig system service disable-telnet yes"),
-                    "Explicitly disable telnet management service under deviceconfig system service.",
+                    "Explicitly disable telnet management service under deviceconfig system service (confirmed via Palo Alto KB kA10g000000CltrCAC).",
                     List.of("SSH or Web UI management access confirmed"),
                     List.of("show deviceconfig system service"),
                     "LOW", CommandType.DERIVABLE_REGEX, null
@@ -304,7 +304,7 @@ public class RemediationTemplateSeeder {
                     "Palo Alto", "PAN-OS", "security.ssh.version",
                     "Enforce SSH Version 2 (Palo Alto)",
                     List.of("set deviceconfig system ssh-service version 2"),
-                    "Configure PAN-OS ssh-service to enforce protocol version 2.",
+                    "[UNCONFIRMED] Configure PAN-OS ssh-service to enforce protocol version 2.",
                     List.of("SSH service operational"),
                     List.of("show deviceconfig system ssh-service"),
                     "LOW", CommandType.DERIVABLE_REGEX, null
@@ -313,7 +313,7 @@ public class RemediationTemplateSeeder {
                     "Palo Alto", "PAN-OS", "security.snmp.version",
                     "Configure SNMPv3 User Access (Palo Alto)",
                     List.of("set deviceconfig system snmp-setting access-setting version v3 users <user> ..."),
-                    "Representative example beyond parser regex: Configure SNMPv3 access setting with user credentials.",
+                    "[UNCONFIRMED] Representative example beyond parser regex: Configure SNMPv3 access setting with user credentials.",
                     List.of("SNMP views configured"),
                     List.of("show deviceconfig system snmp-setting"),
                     "MEDIUM", CommandType.REPRESENTATIVE_EXAMPLE, null
@@ -322,7 +322,7 @@ public class RemediationTemplateSeeder {
                     "Palo Alto", "PAN-OS", "logging.syslog",
                     "Configure Syslog Server and Forwarding (Palo Alto)",
                     List.of("set shared log-settings syslog <profile> server <name> server <ip>", "set shared log-settings system match-list <name> send-syslog <profile>"),
-                    "Two-step configuration directly matching parser detection: Define syslog server profile and bind to log match-list.",
+                    "[UNCONFIRMED] Two-step configuration directly matching parser detection: Define syslog server profile and bind to log match-list.",
                     List.of("Syslog destination reachable"),
                     List.of("show shared log-settings syslog"),
                     "LOW", CommandType.DERIVABLE_REGEX, null
@@ -340,7 +340,7 @@ public class RemediationTemplateSeeder {
                     "Palo Alto", "PAN-OS", "ntp.configured",
                     "Configure Primary NTP Server (Palo Alto)",
                     List.of("set deviceconfig system ntp-servers primary-ntp-server ntp-server-address <ip>"),
-                    "Configure primary NTP server IP address under deviceconfig system ntp-servers.",
+                    "[UNCONFIRMED] Configure primary NTP server IP address under deviceconfig system ntp-servers.",
                     List.of("NTP server reachable on UDP port 123"),
                     List.of("show deviceconfig system ntp-servers"),
                     "LOW", CommandType.DERIVABLE_REGEX, null

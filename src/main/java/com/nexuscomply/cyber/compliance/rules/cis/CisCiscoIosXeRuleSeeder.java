@@ -148,7 +148,7 @@ public class CisCiscoIosXeRuleSeeder {
                     "HIGH",
                     "show running-config | inc aaa new-model",
                     "aaa new-model",
-                    null
+                    "[UNCONFIRMED - CIS benchmark PDF page unconfirmed]"
             ),
             // RULE 2 — CIS 1.2.2
             new CisRuleDefinition(
@@ -163,7 +163,7 @@ public class CisCiscoIosXeRuleSeeder {
                     "HIGH",
                     "show running-config | sec vty",
                     "line vty <range> then transport input ssh",
-                    null
+                    "[UNCONFIRMED - CIS benchmark PDF page unconfirmed]"
             ),
             // RULE 3 — CIS 2.1.1.2
             new CisRuleDefinition(
@@ -178,7 +178,7 @@ public class CisCiscoIosXeRuleSeeder {
                     "HIGH",
                     "sh ip ssh",
                     "ip ssh version 2",
-                    null
+                    "[UNCONFIRMED - CIS benchmark PDF page unconfirmed]"
             ),
             // RULE 4 — CIS 1.5.9
             new CisRuleDefinition(
@@ -193,7 +193,7 @@ public class CisCiscoIosXeRuleSeeder {
                     "HIGH",
                     "show snmp group",
                     "snmp-server group {group_name} v3 priv",
-                    "Evaluates security.snmp.version == '3'; priv keyword verification is not yet modeled in CanonicalSecurityModel"
+                    "Evaluates security.snmp.version == '3'; priv keyword verification is not yet modeled in CanonicalSecurityModel | [UNCONFIRMED - CIS benchmark PDF page unconfirmed]"
             ),
             // RULE 5 — CIS 2.2.1 + 2.2.4
             new CisRuleDefinition(
@@ -208,7 +208,7 @@ public class CisCiscoIosXeRuleSeeder {
                     "MEDIUM",
                     "show run | incl logging host (2.2.4) plus logging enable state (2.2.1)",
                     "logging enable / logging host {ip}",
-                    null
+                    "[UNCONFIRMED - CIS benchmark PDF page unconfirmed]"
             ),
             // RULE 6 — CIS 2.2.2 / 2.2.3
             new CisRuleDefinition(
@@ -223,7 +223,7 @@ public class CisCiscoIosXeRuleSeeder {
                     "MEDIUM",
                     "show run | incl logging buffered / show run | incl logging console",
                     "logging buffered {size} / logging console {level}",
-                    null
+                    "[UNCONFIRMED - CIS benchmark PDF page unconfirmed]"
             ),
             // RULE 7 — CIS 2.3.2
             new CisRuleDefinition(
@@ -238,7 +238,7 @@ public class CisCiscoIosXeRuleSeeder {
                     "MEDIUM",
                     "sh ntp associations",
                     "ntp server {ip_address}",
-                    null
+                    "[UNCONFIRMED - CIS benchmark PDF page unconfirmed]"
             )
     );
 

@@ -43,13 +43,18 @@ public class DefaultRuleApplicabilityChecker implements RuleApplicabilityChecker
         // OS version applicability check
         List<String> osVersions = rule.getApplicableOsVersions();
         if (osVersions != null && !osVersions.isEmpty()) {
-            if (osVersion == null) {
-                return false;
-            }
-            boolean osMatches = osVersions.stream()
-                    .anyMatch(v -> v != null && (osVersion.trim().equalsIgnoreCase(v.trim()) || osVersion.trim().startsWith(v.trim())));
-            if (!osMatches) {
-                return false;
+            if ("Cisco".equalsIgnoreCase(vendor)) {
+                if (osVersion == null) {
+                    return false;
+                }
+                boolean osMatches = osVersions.stream()
+                        .anyMatch(v -> v != null && (osVersion.trim().equalsIgnoreCase(v.trim()) || osVersion.trim().startsWith(v.trim())));
+                if (!osMatches) {
+                    return false;
+                }
+            } else {
+                // Non-Cisco vendors: OS version is "UNKNOWN" (applicableOsVersions is empty/not enforced)
+                return true;
             }
         }
 
