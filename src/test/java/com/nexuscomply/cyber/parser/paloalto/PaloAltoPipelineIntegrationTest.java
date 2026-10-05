@@ -390,12 +390,16 @@ class PaloAltoPipelineIntegrationTest {
         assertThat(findings).allMatch(f -> Boolean.TRUE.equals(f.getActual()));
 
         // Confirm Evidence exists for each finding
+        System.out.println("=== RAW PERSISTED PALO ALTO DELIBERATE-VIOLATION EVIDENCE ===");
         for (FindingDocument f : findings) {
             assertThat(f.getEvidenceIds()).isNotEmpty();
             for (String evId : f.getEvidenceIds()) {
                 EvidenceDocument ev = evidenceRepository.findById(evId).orElse(null);
                 assertThat(ev).isNotNull();
                 assertThat(ev.getSource().getRawText()).contains("disable-telnet no");
+                org.bson.Document rawEvidence = mongoTemplate.getCollection("evidence")
+                        .find(new org.bson.Document("_id", evId)).first();
+                System.out.println(rawEvidence != null ? rawEvidence.toJson() : "null");
             }
         }
 

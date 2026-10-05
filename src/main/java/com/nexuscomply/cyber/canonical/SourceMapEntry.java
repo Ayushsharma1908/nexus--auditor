@@ -5,13 +5,19 @@ public class SourceMapEntry {
     private String canonicalField;
     private int sourceLine;
     private String rawText;
+    private String sourceType = "CONFIGURATION";
 
     public SourceMapEntry() {}
 
     public SourceMapEntry(String canonicalField, int sourceLine, String rawText) {
+        this(canonicalField, sourceLine, rawText, "CONFIGURATION");
+    }
+
+    public SourceMapEntry(String canonicalField, int sourceLine, String rawText, String sourceType) {
         this.canonicalField = canonicalField;
         this.sourceLine = sourceLine;
         this.rawText = rawText;
+        this.sourceType = sourceType != null ? sourceType : "CONFIGURATION";
     }
 
     public String getCanonicalField() {
@@ -36,5 +42,13 @@ public class SourceMapEntry {
 
     public void setRawText(String rawText) {
         this.rawText = rawText;
+    }
+
+    public String getSourceType() {
+        return sourceType;
+    }
+
+    public void setSourceType(String sourceType) {
+        this.sourceType = sourceType;
     }
 }

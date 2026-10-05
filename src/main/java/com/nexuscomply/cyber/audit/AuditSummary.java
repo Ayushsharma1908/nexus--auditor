@@ -85,4 +85,14 @@ public class AuditSummary {
     public void setError(int error) {
         this.error = error;
     }
+
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    public int getEvaluatedControls() {
+        return passed + failed + unknown + error;
+    }
+
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    public double getCoveragePercentage() {
+        return totalControls > 0 ? ((double) getEvaluatedControls() / totalControls) * 100.0 : 0.0;
+    }
 }

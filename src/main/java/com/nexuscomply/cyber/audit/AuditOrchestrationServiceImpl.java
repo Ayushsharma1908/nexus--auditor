@@ -69,6 +69,7 @@ public class AuditOrchestrationServiceImpl implements AuditOrchestrationService 
     private final RuleEvaluator ruleEvaluator;
     private final FindingCreationService findingCreationService;
     private final RiskCalculationService riskCalculationService;
+    private final com.nexuscomply.cyber.ai.service.AiMappingService aiMappingService;
 
     @Autowired
     public AuditOrchestrationServiceImpl(
@@ -81,7 +82,8 @@ public class AuditOrchestrationServiceImpl implements AuditOrchestrationService 
             RuleApplicabilityChecker ruleApplicabilityChecker,
             RuleEvaluator ruleEvaluator,
             FindingCreationService findingCreationService,
-            RiskCalculationService riskCalculationService) {
+            @Autowired(required = false) RiskCalculationService riskCalculationService,
+            @Autowired(required = false) com.nexuscomply.cyber.ai.service.AiMappingService aiMappingService) {
         this.auditRepository = auditRepository;
         this.vendorDetectionService = vendorDetectionService;
         this.parserService = parserService;
@@ -92,6 +94,23 @@ public class AuditOrchestrationServiceImpl implements AuditOrchestrationService 
         this.ruleEvaluator = ruleEvaluator;
         this.findingCreationService = findingCreationService;
         this.riskCalculationService = riskCalculationService;
+        this.aiMappingService = aiMappingService;
+    }
+
+    public AuditOrchestrationServiceImpl(
+            AuditRepository auditRepository,
+            VendorDetectionService vendorDetectionService,
+            ParserService parserService,
+            NormalizationService normalizationService,
+            ComplianceRuleRepository complianceRuleRepository,
+            ControlRepository controlRepository,
+            RuleApplicabilityChecker ruleApplicabilityChecker,
+            RuleEvaluator ruleEvaluator,
+            FindingCreationService findingCreationService,
+            RiskCalculationService riskCalculationService) {
+        this(auditRepository, vendorDetectionService, parserService, normalizationService,
+                complianceRuleRepository, controlRepository, ruleApplicabilityChecker, ruleEvaluator,
+                findingCreationService, riskCalculationService, null);
     }
 
     public AuditOrchestrationServiceImpl(
@@ -106,7 +125,7 @@ public class AuditOrchestrationServiceImpl implements AuditOrchestrationService 
             FindingCreationService findingCreationService) {
         this(auditRepository, vendorDetectionService, parserService, normalizationService,
                 complianceRuleRepository, controlRepository, ruleApplicabilityChecker, ruleEvaluator,
-                findingCreationService, null);
+                findingCreationService, null, null);
     }
 
     @Override
@@ -185,6 +204,17 @@ public class AuditOrchestrationServiceImpl implements AuditOrchestrationService 
             log.info("Audit [{}]: Transitioning through UNKNOWN_REVIEW (found {} unknown syntax items).", auditId, unknownCount);
             if (!updateProgress(auditDoc, AuditStatus.UNKNOWN_REVIEW, 60)) {
                 return haltCancelled(auditId);
+            }
+            if (aiMappingService != null && parserResult.getUnknowns() != null) {
+                for (com.nexuscomply.cyber.parser.UnknownConstruct unknown : parserResult.getUnknowns()) {
+                    if (unknown != null && unknown.getRawText() != null && !unknown.getRawText().trim().isEmpty()) {
+                        try {
+                            aiMappingService.recordUnknownSyntax(vendor, platform, unknown.getRawText().trim());
+                        } catch (Exception ex) {
+                            log.warn("Failed to record unknown syntax [{}]: {}", unknown.getRawText(), ex.getMessage());
+                        }
+                    }
+                }
             }
 
             // Stage 5: CHECKING

@@ -117,7 +117,16 @@ public class FindingCreationServiceImpl implements FindingCreationService {
 
         // Description describes the observed non-compliant state
         String description = deriveDescription(result.getEvidenceSourceField(), result.getActual(), result.getExpected(), result.getMessage());
-        doc.setDescription(description);
+        List<SourceMapEntry> sourceMap = resolveSourceMap(context);
+        boolean isApprovedMapping = sourceMap != null && sourceMap.stream()
+                .anyMatch(e -> e != null && result.getEvidenceSourceField() != null
+                        && result.getEvidenceSourceField().equals(e.getCanonicalField())
+                        && "APPROVED_MAPPING".equalsIgnoreCase(e.getSourceType()));
+        if (isApprovedMapping) {
+            doc.setDescription(description + " [Source: Approved AI Mapping]");
+        } else {
+            doc.setDescription(description);
+        }
 
         // Lifecycle & compliance status (starts at OPEN on creation per absolute rule 4)
         doc.setStatus(FindingStatus.OPEN.name());
@@ -147,7 +156,6 @@ public class FindingCreationServiceImpl implements FindingCreationService {
         // Task 2.2: Line-Level Evidence creation & linking
         List<String> evidenceIds = new ArrayList<>();
         if (evidenceCreationService != null) {
-            List<SourceMapEntry> sourceMap = resolveSourceMap(context);
             Optional<Evidence> evidenceOpt = evidenceCreationService.createEvidence(result, sourceMap, context, doc.getId());
             evidenceOpt.ifPresent(evidence -> evidenceIds.add(evidence.getId()));
         }

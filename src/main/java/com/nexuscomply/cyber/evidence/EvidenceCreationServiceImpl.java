@@ -74,7 +74,11 @@ public class EvidenceCreationServiceImpl implements EvidenceCreationService {
 
         // Source mapping per schema1.md section 11 and Absolute Rules 1 & 3
         EvidenceSource source = new EvidenceSource();
-        source.setSourceType("CONFIGURATION");
+        if (matchedEntry != null && matchedEntry.getSourceType() != null) {
+            source.setSourceType(matchedEntry.getSourceType());
+        } else {
+            source.setSourceType("CONFIGURATION");
+        }
 
         if (matchedEntry != null) {
             source.setLineNumber(matchedEntry.getSourceLine());

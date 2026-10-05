@@ -181,6 +181,14 @@ class CisCiscoIosXeRuleSeederIntegrationTest {
         System.out.println(rawBsonCtrl != null ? rawBsonCtrl.toJson() : "null");
         System.out.println("=== RAW PERSISTED MONGODB DOCUMENT (BSON COLLECTION): COMPLIANCE RULE CIS-1.1.1 ===");
         System.out.println(rawBsonRule != null ? rawBsonRule.toJson() : "null");
+
+        org.bson.Document rawBsonRuleTelnet = mongoTemplate.getCollection("compliance_rules").find(new org.bson.Document("ruleCode", "CIS-1.2.2")).first();
+        System.out.println("=== RAW PERSISTED MONGODB DOCUMENT (BSON COLLECTION): COMPLIANCE RULE CIS-1.2.2 (TELNET) ===");
+        System.out.println(rawBsonRuleTelnet != null ? rawBsonRuleTelnet.toJson() : "null");
+
+        org.bson.Document rawBsonRuleSsh = mongoTemplate.getCollection("compliance_rules").find(new org.bson.Document("ruleCode", "CIS-2.1.1.2")).first();
+        System.out.println("=== RAW PERSISTED MONGODB DOCUMENT (BSON COLLECTION): COMPLIANCE RULE CIS-2.1.1.2 (SSH VERSION) ===");
+        System.out.println(rawBsonRuleSsh != null ? rawBsonRuleSsh.toJson() : "null");
     }
 
     @Test
