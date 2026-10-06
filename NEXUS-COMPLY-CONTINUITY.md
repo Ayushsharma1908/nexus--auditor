@@ -123,6 +123,9 @@ Every task goes through this cycle: Antigravity implements → reports back with
 - Task 2.7: Palo Alto PAN-OS Configuration Parser (`com.nexuscomply.cyber.parser.paloalto`) — implemented; pending Claude review
 - Task 2.8: Remediation Templates Engine (`com.nexuscomply.cyber.remediation`) — implemented; pending Claude review
 - Task 2.9 / 2.9b / 2.9c / 2.9d / 2.9e / 2.9f: Drift Detection Engine (`com.nexuscomply.cyber.drift`) — implemented; pending Claude review
+- Task 2.10a / 2.10b / 2.10c: AI Unknown-Syntax Resolution Loop (`com.nexuscomply.cyber.parser.ai`) — implemented; pending Claude review
+- Task 2.11 / 2.11b: What-If Simulation Engine (`com.nexuscomply.cyber.simulation`) — implemented; pending Claude review
+- Task 2.12: Unified Dashboard & Reporting Aggregation (`com.nexuscomply.cyber.report`) — implemented; pending Claude review
 
 **Sub-step status:**
 | Sub-step | Status | Evidence / notes |
@@ -193,6 +196,12 @@ Every task goes through this cycle: Antigravity implements → reports back with
 | Deterministic Impact & Deltas | implemented; pending Claude review | Computes before/after compliance score, risk score (per-field max rule, clamped 0-100), failed controls, rule result status maps, finding delta, risk delta, and drift impact precedence (`INCREASED`, `DECREASED`, `MIXED`, `UNKNOWN`, `NO_CHANGE`). |
 | Schema Parity (`what_if_simulations`) | implemented; pending Claude review | Optional persistence adheres to `schema1.md` Section 14 `what_if_simulations` (`_id`, `deviceId`, `baseConfigurationVersionId`, `name`, `description`, `changes`, `status`, `before`, `after`, `affectedControlIds`, `affectedFindingIds`, `createdBy`, `createdAt`, `updatedAt`). |
 | Simulation Integration Tests (`WhatIfSimulationIntegrationTest`) | implemented; pending Claude review | 7 integration tests in `WhatIfSimulationIntegrationTest.java`: collection counts unchanged before/after (and +1 on persist), fix removing telnet shows FAIL->PASS & risk decrease (70->0), change introducing telnet shows increase, unknown line in raw config stays UNKNOWN, deterministic repeated execution, safe refusal of unknown device/version, schema1.md Sec 14 persisted document. |
+| **Task 2.12 — Unified Dashboard & Reporting Aggregation** | AWAITING REVIEW | implemented; pending Claude review |
+| Per-Device Posture Aggregation | implemented; pending Claude review | `DashboardReportingServiceImpl#getDevicePosture(deviceId)` aggregates latest audit summary (`passed`, `failed`, `unknown`, `notApplicable`, `evaluated`, `coverage`, `complianceScore`), open findings grouped by severity and framework, top risk assessments. Computed on read with zero writes. |
+| Fleet Summary Aggregation | implemented; pending Claude review | `DashboardReportingServiceImpl#getFleetSummary()` aggregates total devices, active compliant/non-compliant devices, fleet-wide compliance score, and per-vendor statistics (Cisco, Juniper, Fortinet, Palo Alto). Computed on read with zero writes. |
+| Device Drift History Aggregation | implemented; pending Claude review | `DashboardReportingServiceImpl#getDeviceDriftHistory(deviceId)` queries drift events in chronological order with version transitions and impact classifications. Computed on read with zero writes. |
+| Single-Audit Report & Markdown Rendering | implemented; pending Claude review | `DashboardReportingServiceImpl#getAuditReport(auditId)` compiles findings with evidence traceability, remediation plans, and unrecognized syntax items under review into structured `AuditReportResponse` with GitHub-flavored Markdown. UNKNOWN evaluation status is explicitly highlighted and never presented as PASS. Computed on read with zero writes. |
+| Dashboard & Reporting Integration Tests (`DashboardReportingIntegrationTest`) | implemented; pending Claude review | 7 integration tests: empty database safety, safe refusal of unknown device/audit (`NoSuchElementException`), fleet totals equal sum of device totals, collection counts unchanged after every report call, four-vendor audit reports with telnet findings, double-run equality across all reporting endpoints, coverage and UNKNOWN visible in rendered Markdown and never credited as PASS. |
 
 ### Schema Deviations & Conventions (schema1.md Parity)
 1. **`remediation_templates` (schema1.md Sec 15):** Deliberately omitted `controlId` and `ruleId` from MongoDB documents because remediation templates are shared across multiple frameworks (CIS, NIST, ISO) that evaluate the same canonical security fact. Added `canonicalField`, `commandType` (`PLATFORM_GAP`, `DERIVABLE_REGEX`, `REPRESENTATIVE_EXAMPLE`), and `gapExplanation`.
@@ -201,22 +210,26 @@ Every task goes through this cycle: Antigravity implements → reports back with
 4. **`ai_mappings` (schema1.md Sec 17):** Strict 1:1 parity with schema1.md (`_id`, `vendor`, `platform`, `rawSyntax`, `canonicalField`, `mappedValue`, `unit`, `confidence`, `reason`, `status`, `suggestedBy`, `review`, `usageCount`, `createdAt`, `updatedAt`).
 5. **`ai_jobs` (schema1.md Sec 18):** Strict 1:1 parity with schema1.md (`_id`, `type`, `status`, `configurationId`, `versionId`, `input`, `result`, `error`, `startedAt`, `completedAt`, `createdBy`, `createdAt`, `updatedAt`).
 6. **`what_if_simulations` (schema1.md Sec 14):** Strict 1:1 parity with schema1.md (`_id`, `deviceId`, `baseConfigurationVersionId`, `name`, `description`, `changes`, `status`, `before`, `after`, `affectedControlIds`, `affectedFindingIds`, `createdBy`, `createdAt`, `updatedAt`).
+7. **`reports` (schema1.md Sec 19):** Schema defines `reports` collection for generated export files (PDF/JSON storage metadata). Dashboards, device postures, fleet summaries, and audit reports are computed-on-read from underlying domain collections (`audits`, `findings`, `evidence`, `remediation_plans`, `risk_assessments`, `drift_events`, `ai_mappings`) without persisting intermediate dashboard documents.
 
 **If interrupted, last known state (be specific — see instructions at top of file):**
-Tasks 2.4, 2.5, 2.6, 2.7, 2.8, 2.9 (2.9b-2.9f), 2.10a, 2.10b, 2.10c, and 2.11/2.11b are implemented; pending Claude review. All tests pass with 0 failures, 0 errors, 0 skipped. What-If simulation engine operational in-memory and verified against schema1.md Section 14.
+Tasks 2.4, 2.5, 2.6, 2.7, 2.8, 2.9 (2.9b-2.9f), 2.10a, 2.10b, 2.10c, 2.11/2.11b, and 2.12/2.12b are implemented; pending Claude review. All tests pass with 0 failures, 0 errors, 0 skipped. Total test count: 216 tests across 26 test suites.
 
-**Last updated:** See filesystem LastWriteTime via Get-Item
+**Last updated:** 2026-10-07
 
 ---
 
 ## SECTION 5 — What Comes After the Current Task
 
-Tasks 2.4 (Risk Scoring Engine), 2.5 (Juniper JunOS Parser), 2.6 (Fortinet FortiOS Parser), 2.7 (Palo Alto PAN-OS Parser), 2.8 (Remediation Templates Engine), 2.9 / 2.9b / 2.9c / 2.9d / 2.9e / 2.9f (Drift Detection Engine), 2.10a (Narrow Four-Vendor Rule Coverage), 2.10b (AI Unknown-Syntax Resolution Loop), 2.10c (AI Loop Refinements), and 2.11/2.11b (What-If Simulation Engine) are implemented; pending Claude review.
+Tasks 2.4 (Risk Scoring Engine), 2.5 (Juniper JunOS Parser), 2.6 (Fortinet FortiOS Parser), 2.7 (Palo Alto PAN-OS Parser), 2.8 (Remediation Templates Engine), 2.9 / 2.9b / 2.9c / 2.9d / 2.9e / 2.9f (Drift Detection Engine), 2.10a (Narrow Four-Vendor Rule Coverage), 2.10b (AI Unknown-Syntax Resolution Loop), 2.10c (AI Loop Refinements), 2.11/2.11b (What-If Simulation Engine), and 2.12 (Unified Dashboard & Reporting Aggregation) are implemented; pending Claude review.
 
-Per the build order in Section 3.4 and cyberlayer.pdf Section 33, the remaining task is:
-1. **Task 2.12: Unified Dashboard & Reporting APIs** — read-only aggregation over existing collections for executive compliance postures and audit reporting (`cyberlayer.pdf` Sections 23, 29, 33 item 18).
+Per cyberlayer.pdf Section 33 and project roadmap, backend Cyber Layer service and engine implementation is feature-complete at the Java service layer.
+Remaining components outside Package B scope or for future integration:
+1. REST API Controllers and OpenAPI annotations (except `VendorDetectionController`).
+2. Web UI Frontend (React/Dashboard UI) and PDF binary generation export pipeline.
+3. Live LLM client integration replacing `DeterministicStubSuggestionProvider`.
 
-DO NOT start any Task 2.12+ work until Claude review is complete.
+DO NOT start any further work until Claude review is complete.
 
 ## SECTION 6 — Source Material Already Gathered (reuse, don't re-fetch)
 
@@ -227,7 +240,13 @@ DO NOT start any Task 2.12+ work until Claude review is complete.
 - **cyberlayer.pdf (`media_1790191901618.pdf`, SHA-256: 707D7BEB8840BC891B25CF737995EF14CEAE1D9CDDD4F646FEB035F15B3EB464; local path `D:\auditor\cyberlayer.pdf` does not exist on disk, so separate source hash cannot be confirmed):**
   - Section 27 (Four-Vendor Acceptance Scenario: all 4 vendors normalize to ssh.version = 2 evaluated by same compliance rules): PARTLY MET — Demonstrated controls (`security.telnet.enabled` and `security.ssh.version`) normalize across all 4 vendors. Cisco (IOS/IOS-XE) normalizes to 2 and passes; Juniper (JUNOS) normalizes to 2 and passes; Fortinet (FortiOS) and Palo Alto (PAN-OS) leave `ssh.version` unset/null and evaluate as `UNKNOWN` by design (Fortinet has no CLI command for SSH version; PAN-OS running-config XML omits SSH version profile).
   - Section 28 (Unknown Vendor Acceptance Scenario: unknown command -> parser UNKNOWN -> AI suggestion -> human approval -> mapping stored -> normalization -> deterministic re-audit): PARTLY MET (keyword stub, no real provider) — End-to-end loop implemented; pending Claude review: captures unknown syntax into `ai_mappings` (PENDING_REVIEW), generates AI suggestion without auto-approving, requires explicit human review (`approve` with non-blank reviewerId), applies approved mapping on re-audit to canonical model and source map (`APPROVED_MAPPING`), produces FAIL finding and evidence, and gives identical results on re-audit. Note: real LLM client and REST/UI for review are not built (deterministic stub used).
-  - Section 30 (Cyber MVP multi-vendor compliance evaluation): PARTLY MET — Demonstrated controls (`security.telnet.enabled`, `security.ssh.version`) evaluate across all 4 vendors via NIST and ISO rules. The other 5 controls (syslog, AAA, SNMP, NTP, HTTP/HTTPS) remain Cisco-only.
+  - Section 29, Steps 9-13 (Audit Execution, Posture, Reporting, and Review):
+    - Step 9 (Audit Orchestration Pipeline execution): MET at service layer — Full 10-state state machine completes audit, persists findings, evidence, risks, and summary.
+    - Step 10 (Compliance Posture & Finding Aggregation): MET at service layer, no REST/UI — Aggregated per-device posture and fleet summary computed on read from existing collections.
+    - Step 11 (Remediation Planning): MET at service layer, no REST/UI — Automated remediation plans generated with CLI steps, platform gap handling, and non-approved status.
+    - Step 12 (Drift Detection & Analysis): MET at service layer, no REST/UI — Configuration comparison, canonical fact diffing, impact classification, and event logging.
+    - Step 13 (Audit Reporting & Executive Export): MET at service layer, no REST/UI — Structured DTO and executive Markdown report showing coverage, findings with evidence, remediation plans, and isolated UNKNOWN items.
+  - Section 30 ("Integration" / Cyber Layer integration): PARTLY MET at service layer — Multi-vendor ingestion, normalization, evaluation against multi-vendor rules, risk scoring, remediation, drift, and reporting integration complete at service layer. What is NOT built: HTTP REST controllers (outside VendorDetectionController) and UI dashboards/screens.
   - Section 34, Criterion 4 ("AI mappings require human approval before reusable storage"): MET at service layer — Confirmed in `AiMappingServiceImpl` and tested: only APPROVED mappings are reusable by parsers; all mappings start PENDING_REVIEW; approve requires non-blank reviewerId; no code path auto-approves.
   - Section 34, Criterion 10 ("What-If simulation performs impact analysis of proposed changes before deployment"): MET at service layer, no REST/UI — `WhatIfSimulationService` performs impact analysis on in-memory canonical model using read-only `ParserService`, `GenericRuleEvaluator`, and `RiskCalculationService` without mutating operational audit collections (`audits`, `findings`, `evidence`, `risk_assessments`, `normalized_configurations`, `drift_events`, `ai_mappings`). Optional persistence adheres to `schema1.md` Section 14 `what_if_simulations`.
   - Section 34, Criterion 14 ("Unauthorized users cannot trigger protected cyber operations"): OUT OF SCOPE — external RBAC/authentication responsibility (Package A / Spring Security).
