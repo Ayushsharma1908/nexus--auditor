@@ -131,7 +131,8 @@ public class WhatIfSimulationServiceImpl implements WhatIfSimulationService {
             beforeApplicable++;
             RuleEvaluationResult eval = ruleEvaluator.evaluate(baseCanonical, domainRule);
             RuleResultStatus status = eval != null ? eval.getStatus() : RuleResultStatus.ERROR;
-            beforeStatuses.put(ruleDoc.getId(), status);
+            String ruleKey = ruleDoc.getRuleCode() != null ? ruleDoc.getRuleCode() : ruleDoc.getId();
+            beforeStatuses.put(ruleKey, status);
             if (status == RuleResultStatus.PASS) {
                 beforePassed++;
             } else if (status == RuleResultStatus.FAIL) {
@@ -159,7 +160,8 @@ public class WhatIfSimulationServiceImpl implements WhatIfSimulationService {
             afterApplicable++;
             RuleEvaluationResult eval = ruleEvaluator.evaluate(simulatedCanonical, domainRule);
             RuleResultStatus status = eval != null ? eval.getStatus() : RuleResultStatus.ERROR;
-            afterStatuses.put(ruleDoc.getId(), status);
+            String ruleKey = ruleDoc.getRuleCode() != null ? ruleDoc.getRuleCode() : ruleDoc.getId();
+            afterStatuses.put(ruleKey, status);
             if (status == RuleResultStatus.PASS) {
                 afterPassed++;
             } else if (status == RuleResultStatus.FAIL) {
@@ -170,7 +172,7 @@ public class WhatIfSimulationServiceImpl implements WhatIfSimulationService {
                 fieldRiskMapAfter.merge(fieldPath, r, Math::max);
             }
 
-            RuleResultStatus bStatus = beforeStatuses.get(ruleDoc.getId());
+            RuleResultStatus bStatus = beforeStatuses.get(ruleKey);
             if (bStatus != null && bStatus != status) {
                 if (ruleDoc.getControlId() != null && !affectedControlIds.contains(ruleDoc.getControlId())) {
                     affectedControlIds.add(ruleDoc.getControlId());
@@ -252,7 +254,7 @@ public class WhatIfSimulationServiceImpl implements WhatIfSimulationService {
             doc.setAfter(result.getAfter());
             doc.setAffectedControlIds(affectedControlIds);
             doc.setAffectedFindingIds(affectedFindingIds);
-            doc.setCreatedBy(request.getCreatedBy() != null ? request.getCreatedBy() : "user-uuid");
+            doc.setCreatedBy(request.getCreatedBy());
             Instant now = Instant.now();
             doc.setCreatedAt(now);
             doc.setUpdatedAt(now);

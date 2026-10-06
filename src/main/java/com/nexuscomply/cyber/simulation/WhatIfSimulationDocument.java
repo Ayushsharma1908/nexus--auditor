@@ -42,7 +42,7 @@ public class WhatIfSimulationDocument {
     private List<String> affectedFindingIds = new ArrayList<>();
 
     @Indexed
-    private String createdBy = "user-uuid";
+    private String createdBy;
 
     @Indexed
     private Instant createdAt;

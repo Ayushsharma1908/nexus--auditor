@@ -533,11 +533,18 @@ class WhatIfSimulationIntegrationTest {
         request.setName("Disable Telnet");
         request.setDescription("Simulate disabling Telnet on management access.");
         request.setCanonicalOverrides(Map.of("security.telnet.enabled", false));
+        request.setCreatedBy("user-uuid");
         request.setPersist(true);
 
         WhatIfSimulationResult result = whatIfSimulationService.simulate(request);
         assertThat(result).isNotNull();
         assertThat(result.getPersistedSimulationId()).isNotNull();
+
+        // Verify ruleResults output contains ruleCodes
+        assertThat(result.getRuleResultsBefore()).containsKey("CIS-1.2.2");
+        assertThat(result.getRuleResultsBefore().get("CIS-1.2.2")).isEqualTo("FAIL");
+        assertThat(result.getRuleResultsAfter()).containsKey("CIS-1.2.2");
+        assertThat(result.getRuleResultsAfter().get("CIS-1.2.2")).isEqualTo("PASS");
 
         // Verify document persisted in what_if_simulations matching schema1.md section 14
         WhatIfSimulationDocument simDoc = simulationRepository.findById(result.getPersistedSimulationId()).orElseThrow();
@@ -554,6 +561,13 @@ class WhatIfSimulationIntegrationTest {
         assertThat(simDoc.getAfter().getComplianceScore()).isEqualTo(100.0);
         assertThat(simDoc.getBefore().getFailedControls()).isEqualTo(3);
         assertThat(simDoc.getAfter().getFailedControls()).isEqualTo(0);
+
+        // Verify createdBy is null when not supplied by caller
+        WhatIfSimulationRequest nullCreatorReq = new WhatIfSimulationRequest("dev-sim-07", "v1.0");
+        nullCreatorReq.setPersist(true);
+        WhatIfSimulationResult nullCreatorResult = whatIfSimulationService.simulate(nullCreatorReq);
+        WhatIfSimulationDocument nullCreatorDoc = simulationRepository.findById(nullCreatorResult.getPersistedSimulationId()).orElseThrow();
+        assertThat(nullCreatorDoc.getCreatedBy()).isNull();
 
         System.out.println("=== RAW PERSISTED WHAT-IF SIMULATION DOCUMENT (schema1.md Sec 14) ===");
         org.bson.Document rawSim = mongoTemplate.getCollection("what_if_simulations").find(new org.bson.Document("_id", simDoc.getId())).first();

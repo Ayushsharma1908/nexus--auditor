@@ -14,7 +14,7 @@ public class WhatIfSimulationRequest {
     private Map<String, Object> canonicalOverrides = new LinkedHashMap<>();
     private String name = "What-If Simulation";
     private String description;
-    private String createdBy = "user-uuid";
+    private String createdBy;
     private boolean persist = false;
 
     public WhatIfSimulationRequest() {}
