@@ -11,6 +11,7 @@ public class ParserResult {
     private CanonicalSecurityModel canonical = new CanonicalSecurityModel();
     private List<SourceMapEntry> sourceMap = new ArrayList<>();
     private List<UnknownConstruct> unknowns = new ArrayList<>();
+    private List<String> appliedMappingIds = new ArrayList<>();
     private String status = "COMPLETED";
 
     public ParserResult() {}
@@ -44,6 +45,14 @@ public class ParserResult {
 
     public void setUnknowns(List<UnknownConstruct> unknowns) {
         this.unknowns = unknowns != null ? unknowns : new ArrayList<>();
+    }
+
+    public List<String> getAppliedMappingIds() {
+        return appliedMappingIds;
+    }
+
+    public void setAppliedMappingIds(List<String> appliedMappingIds) {
+        this.appliedMappingIds = appliedMappingIds != null ? appliedMappingIds : new ArrayList<>();
     }
 
     public String getStatus() {

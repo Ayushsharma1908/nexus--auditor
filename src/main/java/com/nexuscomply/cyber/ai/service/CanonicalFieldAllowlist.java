@@ -85,4 +85,26 @@ public final class CanonicalFieldAllowlist {
             default -> throw new IllegalArgumentException("Unsupported canonical field: " + field);
         }
     }
+
+    /**
+     * Extracts a canonical field's value from a CanonicalSecurityModel instance.
+     */
+    public static Object extractFromCanonical(CanonicalSecurityModel canonical, String field) {
+        if (canonical == null || field == null) {
+            return null;
+        }
+        return switch (field) {
+            case "security.telnet.enabled" -> canonical.getSecurity() != null && canonical.getSecurity().get("telnet") instanceof Map<?, ?> m ? m.get("enabled") : null;
+            case "security.ssh.enabled" -> canonical.getSecurity() != null && canonical.getSecurity().get("ssh") instanceof Map<?, ?> m ? m.get("enabled") : null;
+            case "security.ssh.version" -> canonical.getSecurity() != null && canonical.getSecurity().get("ssh") instanceof Map<?, ?> m ? m.get("version") : null;
+            case "security.https.enabled" -> canonical.getSecurity() != null && canonical.getSecurity().get("https") instanceof Map<?, ?> m ? m.get("enabled") : null;
+            case "security.snmp.enabled" -> canonical.getSecurity() != null && canonical.getSecurity().get("snmp") instanceof Map<?, ?> m ? m.get("enabled") : null;
+            case "security.snmp.version" -> canonical.getSecurity() != null && canonical.getSecurity().get("snmp") instanceof Map<?, ?> m ? m.get("version") : null;
+            case "authentication.aaa" -> canonical.getAuthentication() != null ? canonical.getAuthentication().get("aaa") : null;
+            case "logging.syslog" -> canonical.getLogging() != null ? canonical.getLogging().get("syslog") : null;
+            case "logging.localLogging" -> canonical.getLogging() != null ? canonical.getLogging().get("localLogging") : null;
+            case "ntp.configured" -> canonical.getNtp() != null ? canonical.getNtp().get("configured") : null;
+            default -> null;
+        };
+    }
 }

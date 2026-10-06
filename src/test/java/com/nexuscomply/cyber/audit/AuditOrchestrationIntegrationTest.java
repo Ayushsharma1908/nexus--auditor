@@ -717,10 +717,14 @@ class AuditOrchestrationIntegrationTest {
         assertThat(audit.getSummary().getNotApplicable()).isEqualTo(17);
         assertThat(audit.getSummary().getEvaluatedControls()).isEqualTo(4);
         assertThat(audit.getSummary().getCoveragePercentage()).isEqualTo(4.0 / 21.0 * 100.0);
+        assertThat(audit.getSummary().getEvaluated()).isEqualTo(4);
+        assertThat(audit.getSummary().getCoverage()).isEqualTo(4.0 / 21.0);
         assertThat(audit.getComplianceScore()).isEqualTo(100.0);
 
         System.out.println("=== RAW AUDIT SUMMARY: UNVERSIONED CISCO CONFIG ===");
         System.out.println(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(audit.getSummary()));
+        System.out.println("=== RAW AUDIT DOCUMENT: UNVERSIONED CISCO CONFIG ===");
+        System.out.println(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(audit));
     }
 
     @Test

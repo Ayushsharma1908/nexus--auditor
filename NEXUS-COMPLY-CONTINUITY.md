@@ -86,6 +86,12 @@ Every task goes through this cycle: Antigravity implements → reports back with
     - Only `APPROVED` mappings are applied by `ParserServiceImpl`, incrementing `usageCount` and recording `SourceMapEntry` and `EvidenceSource` with `sourceType = "APPROVED_MAPPING"`.
     - Rejecting a mapping sets status `REJECTED`, leaving subsequent audits unchanged.
     - Fail-safe boundary: AI provider exceptions or timeouts never fail or alter audit execution (`AuditStatus.COMPLETED`).
+21. **Read-Only Parser Operation & Orchestration Usage Tracking:** Parsers must remain pure translation components and perform zero database writes. `ParserServiceImpl` accepts a `readOnly` flag (for simulation engines and dry runs) and reports applied approved mapping IDs in `ParserResult.appliedMappingIds`. The orchestration layer (`AuditOrchestrationServiceImpl`) is exclusively responsible for incrementing `usageCount` on applied mappings once per completed audit pass.
+22. **What-If Simulation Engine Architecture (schema1.md Section 14, cyberlayer.pdf Sections 20, 33 item 16):**
+    - `WhatIfSimulationService` evaluates proposed config changes against a base configuration snapshot in-memory by reusing `ParserService` (in read-only mode), `GenericRuleEvaluator`, and `RiskCalculationService`.
+    - Never mutates operational audit collections (`audits`, `findings`, `evidence`, `risk_assessments`, `normalized_configurations`, `drift_events`, `ai_mappings`).
+    - Calculates before/after posture, finding delta, risk delta, and classifies changes using the 4-level drift impact precedence (`INCREASED`, `DECREASED`, `MIXED`, `NO_CHANGE`).
+    - Optional simulation persistence strictly adheres to `schema1.md` Section 14 (`what_if_simulations` collection).
 
 ---
 
@@ -170,12 +176,23 @@ Every task goes through this cycle: Antigravity implements → reports back with
 | Scope-Restricted Multi-Vendor Rules | DONE | Extended NIST-AC-17, NIST-SC-8, ISO-A.13.1.1-TELNET, ISO-A.10.1.1 across Cisco, Juniper, Fortinet, and Palo Alto. Zero rules added for other fields. CIS rules retained strictly Cisco-only. `applicableOsVersions` set empty (`[]`) for multi-vendor rules. |
 | Four-Vendor Pipeline Tests | DONE | Deliberate-violation tests (telnet enabled -> FAIL on NIST + ISO with Evidence) and compliant tests executed across all 4 vendors. Fortinet and PAN-OS ssh.version verified UNKNOWN by design. Reconciliation identity `passed + failed + unknown + notApplicable + error == totalControls (21)` confirmed across all vendors. |
 | Cross-Vendor Remediation Plans | DONE | Demonstrated persisted plans: Juniper telnet (`delete system services telnet`), Fortinet telnet (`unselect allowaccess telnet`), Palo Alto telnet (`set deviceconfig system service disable-telnet yes`), and Fortinet SSH version platform gap (`PLATFORM_GAP_NOTICE`, `NO_COMMAND`). |
-| **Task 2.10b — AI Unknown-Syntax Resolution Loop** | AWAITING REVIEW | Implemented; pending Claude review |
+| **Task 2.10b — AI Unknown-Syntax Resolution Loop** | AWAITING REVIEW | implemented; pending Claude review |
 | Schema Parity (`ai_mappings`, `ai_jobs`) | DONE | Implemented `AiMappingDocument`, `AiReview`, `AiJobDocument`, `AiMappingRepository`, and `AiJobRepository` matching schema1.md Sections 17 & 18 exactly. |
 | AI Suggestion Provider & Stub | DONE | `SuggestionProvider` interface with deterministic stub (`DeterministicStubSuggestionProvider`) for reproducible testing without external network calls. Proposes allowlisted canonical fields with type validation. |
 | Human Approval & Review Workflow | DONE | `AiMappingServiceImpl` provides `recordUnknownSyntax`, `requestSuggestion`, `approve`, `reject`. Refuses blank `reviewerId` and non-allowlisted fields. Never auto-approves. |
 | Parser Integration & Deterministic Double Run | DONE | `ParserServiceImpl` applies approved mappings scoped by vendor/platform. Facts and Evidence reflect `sourceType = "APPROVED_MAPPING"`. Proven identical across double runs. Scoped to wrong vendor does not apply. |
 | Fail-Safe Boundary & Section 28 Acceptance | DONE | Audit continues to `COMPLETED` even if provider throws or times out. Section 28 end-to-end scenario passed and persisted documents confirmed. |
+| **Task 2.10c — AI Unknown-Syntax Loop Refinements & Edge Cases** | AWAITING REVIEW | implemented; pending Claude review |
+| Revert non-Cisco return true in DefaultRuleApplicabilityChecker | DONE | Restored strict OS version check across all vendors in `DefaultRuleApplicabilityChecker.java`. |
+| Coverage & Evaluated metrics on AuditSummary | DONE | Added `evaluated` and `coverage` (= (passed+failed+unknown+error)/totalControls) without changing reconciliation identity. Tested on unversioned Cisco config. |
+| Read-Only Parser & Orchestration Usage Tracking | DONE | `ParserServiceImpl` performs zero DB writes; accepts `readOnly` flag. `usageCount` moved to `AuditOrchestrationServiceImpl`, incremented once per completed audit for unique applied mappings. |
+| Fail-Safe Exception Isolation | DONE | Verified audit completes with `status = "COMPLETED"` when `ai_mappings` read throws in parser, and when `ai_mappings` write throws in pending capture. |
+| Edge-Case Workflows | DONE | Tested: duplicate unknown -> exactly 1 pending doc; reject then re-audit -> no new pending doc & line remains UNKNOWN; approve with no suggestion refused; approve after reject refused; double approve refused. |
+| **Task 2.11 — What-If Simulation Engine** | AWAITING REVIEW | implemented; pending Claude review |
+| Pure In-Memory Simulation Pipeline | implemented; pending Claude review | `WhatIfSimulationServiceImpl` reuses `ParserService` (read-only mode), `GenericRuleEvaluator`, and `RiskCalculationService` over deep-cloned canonical model. Zero mutations to operational audit collections (`audits`, `findings`, `evidence`, `risk_assessments`, `normalized_configurations`, `drift_events`, `ai_mappings`). |
+| Deterministic Impact & Deltas | implemented; pending Claude review | Computes before/after compliance score, risk score (per-field max rule, clamped 0-100), failed controls, rule result status maps, finding delta, risk delta, and drift impact precedence (`INCREASED`, `DECREASED`, `MIXED`, `UNKNOWN`, `NO_CHANGE`). |
+| Schema Parity (`what_if_simulations`) | implemented; pending Claude review | Optional persistence adheres to `schema1.md` Section 14 `what_if_simulations` (`_id`, `deviceId`, `baseConfigurationVersionId`, `name`, `description`, `changes`, `status`, `before`, `after`, `affectedControlIds`, `affectedFindingIds`, `createdBy`, `createdAt`, `updatedAt`). |
+| Simulation Integration Tests (`WhatIfSimulationIntegrationTest`) | implemented; pending Claude review | 7 integration tests in `WhatIfSimulationIntegrationTest.java`: collection counts unchanged before/after (and +1 on persist), fix removing telnet shows FAIL->PASS & risk decrease (70->0), change introducing telnet shows increase, unknown line in raw config stays UNKNOWN, deterministic repeated execution, safe refusal of unknown device/version, schema1.md Sec 14 persisted document. |
 
 ### Schema Deviations & Conventions (schema1.md Parity)
 1. **`remediation_templates` (schema1.md Sec 15):** Deliberately omitted `controlId` and `ruleId` from MongoDB documents because remediation templates are shared across multiple frameworks (CIS, NIST, ISO) that evaluate the same canonical security fact. Added `canonicalField`, `commandType` (`PLATFORM_GAP`, `DERIVABLE_REGEX`, `REPRESENTATIVE_EXAMPLE`), and `gapExplanation`.
@@ -183,23 +200,23 @@ Every task goes through this cycle: Antigravity implements → reports back with
 3. **`drift_events` (schema1.md Sec 13):** `changes` records canonical security facts using real `CanonicalSecurityModel` paths (e.g. `security.telnet.enabled` rather than schema example `management.telnetEnabled`). Added per-change `classification` (`IMPROVED`, `DEGRADED`, `NO_SECURITY_IMPACT`, `UNKNOWN_IMPACT`). Event-level `impact` supports `INCREASED`, `DECREASED`, `MIXED`, `UNKNOWN`, and `NO_CHANGE` governed by the 4-level precedence hierarchy above.
 4. **`ai_mappings` (schema1.md Sec 17):** Strict 1:1 parity with schema1.md (`_id`, `vendor`, `platform`, `rawSyntax`, `canonicalField`, `mappedValue`, `unit`, `confidence`, `reason`, `status`, `suggestedBy`, `review`, `usageCount`, `createdAt`, `updatedAt`).
 5. **`ai_jobs` (schema1.md Sec 18):** Strict 1:1 parity with schema1.md (`_id`, `type`, `status`, `configurationId`, `versionId`, `input`, `result`, `error`, `startedAt`, `completedAt`, `createdBy`, `createdAt`, `updatedAt`).
+6. **`what_if_simulations` (schema1.md Sec 14):** Strict 1:1 parity with schema1.md (`_id`, `deviceId`, `baseConfigurationVersionId`, `name`, `description`, `changes`, `status`, `before`, `after`, `affectedControlIds`, `affectedFindingIds`, `createdBy`, `createdAt`, `updatedAt`).
 
 **If interrupted, last known state (be specific — see instructions at top of file):**
-Tasks 2.4, 2.5, 2.6, 2.7, 2.8, 2.9 (2.9b-2.9f), 2.10a, and 2.10b are implemented; pending Claude review. All 189 tests pass with 0 failures, 0 errors, 0 skipped. AI unknown-syntax loop active with human validation boundary and deterministic re-audit.
+Tasks 2.4, 2.5, 2.6, 2.7, 2.8, 2.9 (2.9b-2.9f), 2.10a, 2.10b, 2.10c, and 2.11/2.11b are implemented; pending Claude review. All tests pass with 0 failures, 0 errors, 0 skipped. What-If simulation engine operational in-memory and verified against schema1.md Section 14.
 
-**Last updated:** edited after final mvn run at 2026-10-05T12:42:00+05:30
+**Last updated:** See filesystem LastWriteTime via Get-Item
 
 ---
 
 ## SECTION 5 — What Comes After the Current Task
 
-Tasks 2.4 (Risk Scoring Engine), 2.5 (Juniper JunOS Parser), 2.6 (Fortinet FortiOS Parser), 2.7 (Palo Alto PAN-OS Parser), 2.8 (Remediation Templates Engine), 2.9 / 2.9b / 2.9c / 2.9d / 2.9e / 2.9f (Drift Detection Engine), 2.10a (Narrow Four-Vendor Rule Coverage), and 2.10b (AI Unknown-Syntax Resolution Loop) are completed (implemented; pending Claude review).
+Tasks 2.4 (Risk Scoring Engine), 2.5 (Juniper JunOS Parser), 2.6 (Fortinet FortiOS Parser), 2.7 (Palo Alto PAN-OS Parser), 2.8 (Remediation Templates Engine), 2.9 / 2.9b / 2.9c / 2.9d / 2.9e / 2.9f (Drift Detection Engine), 2.10a (Narrow Four-Vendor Rule Coverage), 2.10b (AI Unknown-Syntax Resolution Loop), 2.10c (AI Loop Refinements), and 2.11/2.11b (What-If Simulation Engine) are implemented; pending Claude review.
 
-Per the build order in Section 3.4 and cyberlayer.pdf Section 33, the remaining tasks are:
-1. **Task 2.11: What-If Simulation Engine** — impact analysis of config changes before deployment (reusing ParserService + GenericRuleEvaluator + RiskCalculationService on an in-memory canonical model, never mutating real audit history; `cyberlayer.pdf` Sections 20, 33 item 16).
-2. **Task 2.12: Unified Dashboard & Reporting APIs** — read-only aggregation over existing collections for executive compliance postures and audit reporting (`cyberlayer.pdf` Sections 23, 29, 33 item 18).
+Per the build order in Section 3.4 and cyberlayer.pdf Section 33, the remaining task is:
+1. **Task 2.12: Unified Dashboard & Reporting APIs** — read-only aggregation over existing collections for executive compliance postures and audit reporting (`cyberlayer.pdf` Sections 23, 29, 33 item 18).
 
-DO NOT start any Task 2.11+ work until Claude review is complete.
+DO NOT start any Task 2.12+ work until Claude review is complete.
 
 ## SECTION 6 — Source Material Already Gathered (reuse, don't re-fetch)
 
@@ -209,9 +226,10 @@ DO NOT start any Task 2.11+ work until Claude review is complete.
 - **DISA STIG** — Cisco IOS XE Router NDM STIG. Only V-220139 (syslog) confirmed from current numbering; SSH content only confirmed from older/superseded numbering; AAA/SNMP/NTP V-IDs not found yet.
 - **cyberlayer.pdf (`media_1790191901618.pdf`, SHA-256: 707D7BEB8840BC891B25CF737995EF14CEAE1D9CDDD4F646FEB035F15B3EB464; local path `D:\auditor\cyberlayer.pdf` does not exist on disk, so separate source hash cannot be confirmed):**
   - Section 27 (Four-Vendor Acceptance Scenario: all 4 vendors normalize to ssh.version = 2 evaluated by same compliance rules): PARTLY MET — Demonstrated controls (`security.telnet.enabled` and `security.ssh.version`) normalize across all 4 vendors. Cisco (IOS/IOS-XE) normalizes to 2 and passes; Juniper (JUNOS) normalizes to 2 and passes; Fortinet (FortiOS) and Palo Alto (PAN-OS) leave `ssh.version` unset/null and evaluate as `UNKNOWN` by design (Fortinet has no CLI command for SSH version; PAN-OS running-config XML omits SSH version profile).
-  - Section 28 (Unknown Vendor Acceptance Scenario: unknown command -> parser UNKNOWN -> AI suggestion -> human approval -> mapping stored -> normalization -> deterministic re-audit): MET — End-to-end loop implemented and verified in `AiUnknownSyntaxLoopIntegrationTest.java`: captures unknown syntax into `ai_mappings` (PENDING_REVIEW), generates AI suggestion without auto-approving, requires explicit human review (`approve` with non-blank reviewerId), applies approved mapping on re-audit to canonical model and source map (`APPROVED_MAPPING`), produces FAIL finding and evidence, and gives identical results on re-audit. Note: real LLM client and REST/UI for review are not built (deterministic stub used).
+  - Section 28 (Unknown Vendor Acceptance Scenario: unknown command -> parser UNKNOWN -> AI suggestion -> human approval -> mapping stored -> normalization -> deterministic re-audit): PARTLY MET (keyword stub, no real provider) — End-to-end loop implemented; pending Claude review: captures unknown syntax into `ai_mappings` (PENDING_REVIEW), generates AI suggestion without auto-approving, requires explicit human review (`approve` with non-blank reviewerId), applies approved mapping on re-audit to canonical model and source map (`APPROVED_MAPPING`), produces FAIL finding and evidence, and gives identical results on re-audit. Note: real LLM client and REST/UI for review are not built (deterministic stub used).
   - Section 30 (Cyber MVP multi-vendor compliance evaluation): PARTLY MET — Demonstrated controls (`security.telnet.enabled`, `security.ssh.version`) evaluate across all 4 vendors via NIST and ISO rules. The other 5 controls (syslog, AAA, SNMP, NTP, HTTP/HTTPS) remain Cisco-only.
-  - Section 34, Criterion 4 ("AI mappings require human approval before reusable storage"): MET — Confirmed in `AiMappingServiceImpl` and tested: only APPROVED mappings are reusable by parsers; all mappings start PENDING_REVIEW; approve requires non-blank reviewerId; no code path auto-approves.
+  - Section 34, Criterion 4 ("AI mappings require human approval before reusable storage"): MET at service layer — Confirmed in `AiMappingServiceImpl` and tested: only APPROVED mappings are reusable by parsers; all mappings start PENDING_REVIEW; approve requires non-blank reviewerId; no code path auto-approves.
+  - Section 34, Criterion 10 ("What-If simulation performs impact analysis of proposed changes before deployment"): MET at service layer, no REST/UI — `WhatIfSimulationService` performs impact analysis on in-memory canonical model using read-only `ParserService`, `GenericRuleEvaluator`, and `RiskCalculationService` without mutating operational audit collections (`audits`, `findings`, `evidence`, `risk_assessments`, `normalized_configurations`, `drift_events`, `ai_mappings`). Optional persistence adheres to `schema1.md` Section 14 `what_if_simulations`.
   - Section 34, Criterion 14 ("Unauthorized users cannot trigger protected cyber operations"): OUT OF SCOPE — external RBAC/authentication responsibility (Package A / Spring Security).
   - Section 34, Criterion 16 ("Four-vendor end-to-end tests pass for demonstrated controls"): PARTLY MET — Four-vendor end-to-end audit pipelines pass for demonstrated controls (`security.telnet.enabled`, `security.ssh.version`). Audits on non-Cisco vendors evaluate with 4 applicable controls and 17 notApplicable controls, satisfying reconciliation identity `passed + failed + unknown + notApplicable + error == 21`.
 

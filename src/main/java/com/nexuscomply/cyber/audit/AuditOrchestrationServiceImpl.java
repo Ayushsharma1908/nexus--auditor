@@ -217,6 +217,18 @@ public class AuditOrchestrationServiceImpl implements AuditOrchestrationService 
                 }
             }
 
+            // Increment usageCount once per audit for mappings applied during parsing
+            if (aiMappingService != null && parserResult.getAppliedMappingIds() != null) {
+                Set<String> uniqueAppliedIds = new LinkedHashSet<>(parserResult.getAppliedMappingIds());
+                for (String mappingId : uniqueAppliedIds) {
+                    try {
+                        aiMappingService.incrementUsage(mappingId);
+                    } catch (Exception ex) {
+                        log.warn("Failed to increment usageCount for AI mapping [{}]: {}", mappingId, ex.getMessage());
+                    }
+                }
+            }
+
             // Stage 5: CHECKING
             if (!updateProgress(auditDoc, AuditStatus.CHECKING, 75)) {
                 return haltCancelled(auditId);

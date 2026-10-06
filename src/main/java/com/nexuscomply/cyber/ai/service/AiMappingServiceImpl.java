@@ -163,8 +163,18 @@ public class AiMappingServiceImpl implements AiMappingService {
         AiMappingDocument doc = aiMappingRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Unknown syntax mapping not found for ID: " + id));
 
+        if ("REJECTED".equalsIgnoreCase(doc.getStatus())) {
+            throw new IllegalStateException("Cannot approve a rejected mapping");
+        }
+        if ("APPROVED".equalsIgnoreCase(doc.getStatus())) {
+            throw new IllegalStateException("Mapping is already approved");
+        }
+        if (!"PENDING_REVIEW".equalsIgnoreCase(doc.getStatus())) {
+            throw new IllegalStateException("Cannot approve mapping with status: " + doc.getStatus());
+        }
+
         if (doc.getCanonicalField() == null || doc.getMappedValue() == null) {
-            throw new IllegalStateException("Cannot approve mapping without valid proposed canonicalField and mappedValue");
+            throw new IllegalStateException("Cannot approve mapping without valid proposed suggestion");
         }
 
         // Validate before approval
@@ -191,6 +201,18 @@ public class AiMappingServiceImpl implements AiMappingService {
         doc.setUpdatedAt(Instant.now());
 
         return aiMappingRepository.save(doc);
+    }
+
+    @Override
+    public void incrementUsage(String mappingId) {
+        if (mappingId == null || mappingId.isBlank()) {
+            return;
+        }
+        aiMappingRepository.findById(mappingId).ifPresent(doc -> {
+            doc.setUsageCount(doc.getUsageCount() + 1);
+            doc.setUpdatedAt(Instant.now());
+            aiMappingRepository.save(doc);
+        });
     }
 
     @Override

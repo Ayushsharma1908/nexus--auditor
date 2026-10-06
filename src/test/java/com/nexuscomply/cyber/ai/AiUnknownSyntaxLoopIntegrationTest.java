@@ -45,6 +45,7 @@ import com.nexuscomply.cyber.normalization.NormalizationService;
 import com.nexuscomply.cyber.normalization.NormalizationServiceImpl;
 import com.nexuscomply.cyber.normalization.NormalizedConfigurationDocument;
 import com.nexuscomply.cyber.normalization.NormalizedConfigurationRepository;
+import com.nexuscomply.cyber.parser.ParserResult;
 import com.nexuscomply.cyber.parser.ParserService;
 import com.nexuscomply.cyber.parser.ParserServiceImpl;
 import com.nexuscomply.cyber.parser.cisco.CiscoIosParser;
@@ -101,6 +102,12 @@ class AiUnknownSyntaxLoopIntegrationTest {
     private DeterministicStubSuggestionProvider suggestionProvider;
     private AiMappingService aiMappingService;
     private AuditOrchestrationService auditOrchestrationService;
+    private EvidenceCreationService evidenceCreationService;
+    private FindingCreationService findingCreationService;
+    private RiskCalculationService riskCalculationService;
+    private VendorDetectionService vendorDetectionService;
+    private RuleApplicabilityChecker applicabilityChecker;
+    private RuleEvaluator ruleEvaluator;
 
     private ObjectMapper objectMapper;
 
@@ -163,20 +170,20 @@ class AiUnknownSyntaxLoopIntegrationTest {
         ), aiMappingRepository);
 
         normalizationService = new NormalizationServiceImpl(parserService, normalizedConfigRepository);
-        EvidenceCreationService evidenceCreationService = new EvidenceCreationServiceImpl(evidenceRepository);
-        FindingCreationService findingCreationService = new FindingCreationServiceImpl(
+        evidenceCreationService = new EvidenceCreationServiceImpl(evidenceRepository);
+        findingCreationService = new FindingCreationServiceImpl(
                 findingRepository,
                 ruleRepository,
                 controlRepository,
                 evidenceCreationService,
                 normalizedConfigRepository
         );
-        RiskCalculationService riskCalculationService = new RiskCalculationServiceImpl(riskRepository);
+        riskCalculationService = new RiskCalculationServiceImpl(riskRepository);
 
-        VendorDetectionService vendorDetectionService = new com.nexuscomply.cyber.detection.VendorFingerprintDetectionService();
+        vendorDetectionService = new com.nexuscomply.cyber.detection.VendorFingerprintDetectionService();
 
-        RuleApplicabilityChecker applicabilityChecker = new DefaultRuleApplicabilityChecker();
-        RuleEvaluator ruleEvaluator = new GenericRuleEvaluator();
+        applicabilityChecker = new DefaultRuleApplicabilityChecker();
+        ruleEvaluator = new GenericRuleEvaluator();
 
         auditOrchestrationService = new AuditOrchestrationServiceImpl(
                 auditRepository,
@@ -283,9 +290,16 @@ class AiUnknownSyntaxLoopIntegrationTest {
             }
         }
 
-        // Mapping usage count incremented
+        // Mapping usage count incremented exactly once per audit (moved to orchestration layer)
         AiMappingDocument refreshedMapping = aiMappingRepository.findById(pendingMapping.getId()).orElseThrow();
-        assertThat(refreshedMapping.getUsageCount()).isGreaterThanOrEqualTo(1);
+        assertThat(refreshedMapping.getUsageCount()).isEqualTo(1);
+
+        // Parsing with read-only flag performs zero DB writes and leaves usageCount unchanged
+        long countBefore = aiMappingRepository.count();
+        ParserResult readOnlyResult = parserService.parse(junosConfig, "Juniper", "JUNOS", true);
+        assertThat(readOnlyResult).isNotNull();
+        assertThat(aiMappingRepository.count()).isEqualTo(countBefore);
+        assertThat(aiMappingRepository.findById(pendingMapping.getId()).orElseThrow().getUsageCount()).isEqualTo(1);
 
         System.out.println("=== RAW PERSISTED AI MAPPING DOCUMENT (APPROVED) ===");
         org.bson.Document rawAppr = mongoTemplate.getCollection("ai_mappings").find(new org.bson.Document("_id", approvedMapping.getId())).first();
@@ -484,6 +498,14 @@ class AiUnknownSyntaxLoopIntegrationTest {
         AiMappingDocument captured = aiMappingRepository.findByVendorAndPlatformAndRawSyntax(vendor, platform, "set system services legacy-telnet active").orElseThrow();
         assertThat(captured.getStatus()).isEqualTo("PENDING_REVIEW");
 
+        System.out.println("=== SECTION 28 PRE-APPROVAL AUDIT DOCUMENT ===");
+        org.bson.Document rawAudit1 = mongoTemplate.getCollection("audits").find(new org.bson.Document("_id", audit1.getId())).first();
+        System.out.println(rawAudit1 != null ? rawAudit1.toJson() : "null");
+
+        System.out.println("=== SECTION 28 PRE-APPROVAL PENDING AI MAPPING DOCUMENT ===");
+        org.bson.Document rawPending = mongoTemplate.getCollection("ai_mappings").find(new org.bson.Document("_id", captured.getId())).first();
+        System.out.println(rawPending != null ? rawPending.toJson() : "null");
+
         // Step 2: AI suggestion
         AiMappingDocument suggested = aiMappingService.requestSuggestion(captured.getId());
         assertThat(suggested.getCanonicalField()).isEqualTo("security.telnet.enabled");
@@ -530,4 +552,253 @@ class AiUnknownSyntaxLoopIntegrationTest {
         org.bson.Document rawAudit = mongoTemplate.getCollection("audits").find(new org.bson.Document("_id", audit2.getId())).first();
         System.out.println(rawAudit != null ? rawAudit.toJson() : "null");
     }
+
+    @Test
+    @DisplayName("10. Fail-Safe: ai_mappings read throws in parser -> audit remains COMPLETED")
+    void testFailSafe_AiMappingsReadThrowsInParserLeavesAuditCompleted() {
+        AiMappingRepository mockRepo = org.mockito.Mockito.mock(AiMappingRepository.class);
+        org.mockito.Mockito.when(mockRepo.findByVendorAndPlatformAndRawSyntax(
+                org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.anyString())
+        ).thenThrow(new RuntimeException("Simulated Mongo read timeout / connection failure"));
+
+        ParserService failingParser = new ParserServiceImpl(
+                List.of(new CiscoIosParser(), new JuniperJunosParser(), new FortinetFortiOSParser(), new PaloAltoPanOsParser()),
+                mockRepo
+        );
+
+        NormalizationService normService = new NormalizationServiceImpl(failingParser, normalizedConfigRepository);
+
+        AuditOrchestrationServiceImpl customOrch = new AuditOrchestrationServiceImpl(
+                auditRepository,
+                vendorDetectionService,
+                failingParser,
+                normService,
+                ruleRepository,
+                controlRepository,
+                applicabilityChecker,
+                ruleEvaluator,
+                findingCreationService,
+                riskCalculationService,
+                aiMappingService
+        );
+
+        String config = String.join("\n",
+                "set system services ssh protocol-version v2",
+                "set system services legacy-telnet active"
+        );
+
+        Audit audit = customOrch.startAudit("dev-fs-read-01", "cfg-fs-01", "v1.0", config);
+        assertThat(audit).isNotNull();
+        assertThat(audit.getStatus()).isEqualTo(AuditStatus.COMPLETED.name());
+        assertThat(audit.getSummary().getTotalControls()).isEqualTo(21);
+
+        System.out.println("=== FAIL-SAFE AUDIT RESULT (AI MAPPINGS READ THROWS) ===");
+        org.bson.Document rawAudit = mongoTemplate.getCollection("audits").find(new org.bson.Document("_id", audit.getId())).first();
+        System.out.println(rawAudit != null ? rawAudit.toJson() : "null");
+    }
+
+    @Test
+    @DisplayName("11. Fail-Safe: ai_mappings write throws in pending capture -> audit remains COMPLETED")
+    void testFailSafe_AiMappingsWriteThrowsInPendingCaptureLeavesAuditCompleted() {
+        AiMappingService mockAiService = org.mockito.Mockito.mock(AiMappingService.class);
+        org.mockito.Mockito.when(mockAiService.recordUnknownSyntax(
+                org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.anyString())
+        ).thenThrow(new RuntimeException("Simulated Mongo write concern timeout / connection error"));
+
+        AuditOrchestrationServiceImpl customOrch = new AuditOrchestrationServiceImpl(
+                auditRepository,
+                vendorDetectionService,
+                parserService,
+                normalizationService,
+                ruleRepository,
+                controlRepository,
+                applicabilityChecker,
+                ruleEvaluator,
+                findingCreationService,
+                riskCalculationService,
+                mockAiService
+        );
+
+        String config = String.join("\n",
+                "set system services ssh protocol-version v2",
+                "set system services legacy-telnet active"
+        );
+
+        Audit audit = customOrch.startAudit("dev-fs-write-01", "cfg-fs-02", "v1.0", config);
+        assertThat(audit).isNotNull();
+        assertThat(audit.getStatus()).isEqualTo(AuditStatus.COMPLETED.name());
+        assertThat(audit.getSummary().getTotalControls()).isEqualTo(21);
+
+        System.out.println("=== FAIL-SAFE AUDIT RESULT (AI MAPPINGS WRITE THROWS) ===");
+        org.bson.Document rawAudit = mongoTemplate.getCollection("audits").find(new org.bson.Document("_id", audit.getId())).first();
+        System.out.println(rawAudit != null ? rawAudit.toJson() : "null");
+    }
+
+    @Test
+    @DisplayName("12. Edge Case: Audit twice -> exactly one pending doc in ai_mappings")
+    void testEdgeCase_AuditTwiceYieldsOnePendingDoc() {
+        String config = String.join("\n",
+                "set system services ssh protocol-version v2",
+                "set system services duplicate-unknown test"
+        );
+
+        // Run 1
+        Audit audit1 = auditOrchestrationService.startAudit("dev-edge-01", "cfg-edge-01", "v1.0", config);
+        assertThat(audit1.getStatus()).isEqualTo(AuditStatus.COMPLETED.name());
+
+        // Run 2 on same config
+        Audit audit2 = auditOrchestrationService.startAudit("dev-edge-01", "cfg-edge-01", "v2.0", config);
+        assertThat(audit2.getStatus()).isEqualTo(AuditStatus.COMPLETED.name());
+
+        List<AiMappingDocument> matches = aiMappingRepository.findAll().stream()
+                .filter(m -> "set system services duplicate-unknown test".equals(m.getRawSyntax()))
+                .toList();
+
+        assertThat(matches).hasSize(1);
+        assertThat(matches.get(0).getStatus()).isEqualTo("PENDING_REVIEW");
+
+        System.out.println("=== RAW PERSISTED SINGLE PENDING MAPPING AFTER TWO AUDITS ===");
+        org.bson.Document rawDoc = mongoTemplate.getCollection("ai_mappings").find(new org.bson.Document("_id", matches.get(0).getId())).first();
+        System.out.println(rawDoc != null ? rawDoc.toJson() : "null");
+    }
+
+    @Test
+    @DisplayName("13. Edge Case: Reject then re-audit -> no new pending doc and line remains UNKNOWN")
+    void testEdgeCase_RejectThenReauditYieldsNoNewPendingDocAndLineUnknown() {
+        String config = String.join("\n",
+                "set system services ssh protocol-version v2",
+                "set system services rejected-unknown test"
+        );
+
+        // Audit 1: captures pending mapping
+        auditOrchestrationService.startAudit("dev-edge-02", "cfg-edge-02", "v1.0", config);
+        AiMappingDocument pending = aiMappingRepository.findByVendorAndPlatformAndRawSyntax(
+                "Juniper", "JUNOS", "set system services rejected-unknown test"
+        ).orElseThrow();
+
+        // Reject mapping
+        AiMappingDocument rejected = aiMappingService.reject(pending.getId(), "reviewer-sec-01", "Denied explicitly");
+        assertThat(rejected.getStatus()).isEqualTo("REJECTED");
+
+        // Audit 2: Re-audit on same config
+        Audit audit2 = auditOrchestrationService.startAudit("dev-edge-02", "cfg-edge-02", "v2.0", config);
+        assertThat(audit2.getStatus()).isEqualTo(AuditStatus.COMPLETED.name());
+
+        List<AiMappingDocument> matches = aiMappingRepository.findAll().stream()
+                .filter(m -> "set system services rejected-unknown test".equals(m.getRawSyntax()))
+                .toList();
+
+        assertThat(matches).hasSize(1);
+        assertThat(matches.get(0).getStatus()).isEqualTo("REJECTED");
+
+        // Line was not converted to findings or mapped facts
+        List<FindingDocument> findings = findingRepository.findByDeviceId("dev-edge-02");
+        assertThat(findings).isEmpty();
+
+        System.out.println("=== RAW PERSISTED REJECTED MAPPING AFTER RE-AUDIT ===");
+        org.bson.Document rawDoc = mongoTemplate.getCollection("ai_mappings").find(new org.bson.Document("_id", matches.get(0).getId())).first();
+        System.out.println(rawDoc != null ? rawDoc.toJson() : "null");
+    }
+
+    @Test
+    @DisplayName("14. Edge Case: Approve with no suggestion is refused")
+    void testEdgeCase_ApproveWithNoSuggestionRefused() {
+        AiMappingDocument pending = aiMappingService.recordUnknownSyntax("Juniper", "JUNOS", "set unanalyzed command");
+        assertThat(pending.getCanonicalField()).isNull();
+        assertThat(pending.getMappedValue()).isNull();
+
+        assertThatThrownBy(() -> aiMappingService.approve(pending.getId(), "admin-01"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Cannot approve mapping without valid proposed suggestion");
+    }
+
+    @Test
+    @DisplayName("15. Edge Case: Approve after reject is refused")
+    void testEdgeCase_ApproveAfterRejectRefused() {
+        AiMappingDocument pending = aiMappingService.recordUnknownSyntax("Juniper", "JUNOS", "set rejected then approve");
+        aiMappingService.requestSuggestion(pending.getId());
+        aiMappingService.reject(pending.getId(), "admin-01", "Wrong directive");
+
+        assertThatThrownBy(() -> aiMappingService.approve(pending.getId(), "admin-02"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Cannot approve a rejected mapping");
+    }
+
+    @Test
+    @DisplayName("16. Edge Case: Double approve is refused")
+    void testEdgeCase_DoubleApproveRefused() {
+        AiMappingDocument pending = aiMappingService.recordUnknownSyntax("Juniper", "JUNOS", "set system services legacy-telnet active");
+        aiMappingService.requestSuggestion(pending.getId());
+        aiMappingService.approve(pending.getId(), "admin-01");
+
+        assertThatThrownBy(() -> aiMappingService.approve(pending.getId(), "admin-02"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Mapping is already approved");
+    }
+
+    @Test
+    @DisplayName("17. Orchestration Layer: One re-audit increments mapping usageCount by exactly 1")
+    void testUsageCountIncrementedOncePerAuditOnReaudit() {
+        AiMappingDocument pending = aiMappingService.recordUnknownSyntax("Juniper", "JUNOS", "set system services custom-telnet-flag on");
+        aiMappingService.requestSuggestion(pending.getId());
+        AiMappingDocument approved = aiMappingService.approve(pending.getId(), "sec-admin-01");
+        assertThat(approved.getUsageCount()).isEqualTo(0);
+
+        String config = String.join("\n",
+                "set system services ssh protocol-version v2",
+                "set system services custom-telnet-flag on"
+        );
+
+        // Audit 1
+        auditOrchestrationService.startAudit("dev-usage-01", "cfg-usage-01", "v1.0", config);
+        AiMappingDocument afterAudit1 = aiMappingRepository.findById(approved.getId()).orElseThrow();
+        assertThat(afterAudit1.getUsageCount()).isEqualTo(1);
+
+        // Re-audit (Audit 2)
+        auditOrchestrationService.startAudit("dev-usage-01", "cfg-usage-01", "v2.0", config);
+        AiMappingDocument afterAudit2 = aiMappingRepository.findById(approved.getId()).orElseThrow();
+        assertThat(afterAudit2.getUsageCount()).isEqualTo(2);
+
+        System.out.println("=== USAGE COUNT AFTER RE-AUDIT: INITIAL=0, AUDIT1=1, AUDIT2=2 ===");
+        org.bson.Document rawDoc = mongoTemplate.getCollection("ai_mappings").find(new org.bson.Document("_id", approved.getId())).first();
+        System.out.println(rawDoc != null ? rawDoc.toJson() : "null");
+    }
+
+    @Test
+    @DisplayName("18. Parser Layer: Parse with read-only flag performs zero database writes")
+    void testParserReadOnlyFlagPerformsNoDbWrites() {
+        AiMappingDocument pending = aiMappingService.recordUnknownSyntax("Juniper", "JUNOS", "set system services read-only-telnet flag");
+        aiMappingService.requestSuggestion(pending.getId());
+        AiMappingDocument approved = aiMappingService.approve(pending.getId(), "sec-admin-01");
+        assertThat(approved.getUsageCount()).isEqualTo(0);
+
+        long mappingCountBefore = aiMappingRepository.count();
+        long jobCountBefore = aiJobRepository.count();
+
+        String rawConfig = String.join("\n",
+                "set system services ssh protocol-version v2",
+                "set system services read-only-telnet flag",
+                "set system services new-unknown-in-readonly line"
+        );
+
+        // Call parser directly in read-only mode
+        ParserResult result = parserService.parse(rawConfig, "Juniper", "JUNOS", true);
+        assertThat(result).isNotNull();
+        assertThat(result.getStatus()).isEqualTo("COMPLETED");
+        assertThat(result.getAppliedMappingIds()).contains(approved.getId());
+
+        // Zero database writes occurred
+        assertThat(aiMappingRepository.count()).isEqualTo(mappingCountBefore);
+        assertThat(aiJobRepository.count()).isEqualTo(jobCountBefore);
+        AiMappingDocument docAfter = aiMappingRepository.findById(approved.getId()).orElseThrow();
+        assertThat(docAfter.getUsageCount()).isEqualTo(0);
+
+        System.out.println("=== PARSER READ-ONLY TEST: NO WRITES TO AI_MAPPINGS OR AI_JOBS, USAGE COUNT UNCHANGED ===");
+        System.out.println("ai_mappings count: " + aiMappingRepository.count() + " (unchanged), usageCount: " + docAfter.getUsageCount());
+    }
 }
+

@@ -40,4 +40,9 @@ public interface AiMappingService {
     List<AiMappingDocument> getPendingReview();
 
     List<AiMappingDocument> getApproved(String vendor, String platform);
+
+    /**
+     * Increments usageCount by 1 for the specified mapping ID, once per audit execution.
+     */
+    void incrementUsage(String mappingId);
 }

@@ -14,6 +14,8 @@ import java.util.Optional;
 @Service
 public class ParserServiceImpl implements ParserService {
 
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(ParserServiceImpl.class);
+
     private final List<VendorParser> vendorParsers;
     private final AiMappingRepository aiMappingRepository;
 
@@ -31,6 +33,11 @@ public class ParserServiceImpl implements ParserService {
 
     @Override
     public ParserResult parse(String rawConfig, String vendor, String platform) {
+        return parse(rawConfig, vendor, platform, false);
+    }
+
+    @Override
+    public ParserResult parse(String rawConfig, String vendor, String platform, boolean readOnly) {
         if (rawConfig == null || rawConfig.trim().isEmpty()) {
             ParserResult emptyResult = new ParserResult();
             emptyResult.setStatus("FAILED");
@@ -64,32 +71,38 @@ public class ParserServiceImpl implements ParserService {
         List<UnknownConstruct> remainingUnknowns = new ArrayList<>();
         for (UnknownConstruct unknown : result.getUnknowns()) {
             if (unknown != null && unknown.getRawText() != null && !unknown.getRawText().isBlank()) {
-                Optional<AiMappingDocument> mappingOpt = aiMappingRepository.findByVendorAndPlatformAndRawSyntax(
-                        vendor, platform, unknown.getRawText().trim()
-                );
-                if (mappingOpt.isPresent() && "APPROVED".equalsIgnoreCase(mappingOpt.get().getStatus())) {
-                    AiMappingDocument mapping = mappingOpt.get();
-                    if (mapping.getCanonicalField() != null && mapping.getMappedValue() != null) {
-                        // Apply to canonical model
-                        CanonicalFieldAllowlist.applyToCanonical(
-                                result.getCanonical(),
-                                mapping.getCanonicalField(),
-                                mapping.getMappedValue()
-                        );
+                try {
+                    Optional<AiMappingDocument> mappingOpt = aiMappingRepository.findByVendorAndPlatformAndRawSyntax(
+                            vendor, platform, unknown.getRawText().trim()
+                    );
+                    if (mappingOpt.isPresent() && "APPROVED".equalsIgnoreCase(mappingOpt.get().getStatus())) {
+                        AiMappingDocument mapping = mappingOpt.get();
+                        if (mapping.getCanonicalField() != null && mapping.getMappedValue() != null) {
+                            // Apply to canonical model
+                            CanonicalFieldAllowlist.applyToCanonical(
+                                    result.getCanonical(),
+                                    mapping.getCanonicalField(),
+                                    mapping.getMappedValue()
+                            );
 
-                        // Record source map entry with APPROVED_MAPPING source type
-                        result.getSourceMap().add(new SourceMapEntry(
-                                mapping.getCanonicalField(),
-                                unknown.getSourceLine(),
-                                unknown.getRawText(),
-                                "APPROVED_MAPPING"
-                        ));
+                            // Record source map entry with APPROVED_MAPPING source type
+                            result.getSourceMap().add(new SourceMapEntry(
+                                    mapping.getCanonicalField(),
+                                    unknown.getSourceLine(),
+                                    unknown.getRawText(),
+                                    "APPROVED_MAPPING"
+                            ));
 
-                        // Track usage count
-                        mapping.setUsageCount(mapping.getUsageCount() + 1);
-                        aiMappingRepository.save(mapping);
-                        continue;
+                            // Parser must not write: record applied mapping ID without persisting/saving
+                            if (mapping.getId() != null) {
+                                result.getAppliedMappingIds().add(mapping.getId());
+                            }
+                            continue;
+                        }
                     }
+                } catch (Exception ex) {
+                    log.warn("Fail-safe: error reading approved AI mapping for [{}] on {} {}: {}",
+                            unknown.getRawText(), vendor, platform, ex.getMessage());
                 }
             }
             remainingUnknowns.add(unknown);

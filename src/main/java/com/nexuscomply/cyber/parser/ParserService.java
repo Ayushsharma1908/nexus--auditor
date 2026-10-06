@@ -1,5 +1,9 @@
 package com.nexuscomply.cyber.parser;
 
 public interface ParserService {
-    ParserResult parse(String rawConfig, String vendor, String platform);
+    default ParserResult parse(String rawConfig, String vendor, String platform) {
+        return parse(rawConfig, vendor, platform, false);
+    }
+
+    ParserResult parse(String rawConfig, String vendor, String platform, boolean readOnly);
 }

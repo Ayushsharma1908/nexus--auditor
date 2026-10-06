@@ -22,6 +22,8 @@ public class AuditSummary {
     private int unknown;
     private int notApplicable;
     private int error;
+    private int evaluated;
+    private double coverage;
 
     public AuditSummary() {}
 
@@ -36,6 +38,8 @@ public class AuditSummary {
         this.unknown = unknown;
         this.notApplicable = notApplicable;
         this.error = error;
+        this.evaluated = passed + failed + unknown + error;
+        this.coverage = totalControls > 0 ? (double) this.evaluated / totalControls : 0.0;
     }
 
     public int getTotalControls() {
@@ -44,6 +48,7 @@ public class AuditSummary {
 
     public void setTotalControls(int totalControls) {
         this.totalControls = totalControls;
+        this.coverage = totalControls > 0 ? (double) getEvaluated() / totalControls : 0.0;
     }
 
     public int getPassed() {
@@ -52,6 +57,8 @@ public class AuditSummary {
 
     public void setPassed(int passed) {
         this.passed = passed;
+        this.evaluated = getEvaluated();
+        this.coverage = totalControls > 0 ? (double) this.evaluated / totalControls : 0.0;
     }
 
     public int getFailed() {
@@ -60,6 +67,8 @@ public class AuditSummary {
 
     public void setFailed(int failed) {
         this.failed = failed;
+        this.evaluated = getEvaluated();
+        this.coverage = totalControls > 0 ? (double) this.evaluated / totalControls : 0.0;
     }
 
     public int getUnknown() {
@@ -68,6 +77,8 @@ public class AuditSummary {
 
     public void setUnknown(int unknown) {
         this.unknown = unknown;
+        this.evaluated = getEvaluated();
+        this.coverage = totalControls > 0 ? (double) this.evaluated / totalControls : 0.0;
     }
 
     public int getNotApplicable() {
@@ -84,15 +95,33 @@ public class AuditSummary {
 
     public void setError(int error) {
         this.error = error;
+        this.evaluated = getEvaluated();
+        this.coverage = totalControls > 0 ? (double) this.evaluated / totalControls : 0.0;
+    }
+
+    public int getEvaluated() {
+        return passed + failed + unknown + error;
+    }
+
+    public void setEvaluated(int evaluated) {
+        this.evaluated = evaluated;
+    }
+
+    public double getCoverage() {
+        return totalControls > 0 ? (double) getEvaluated() / totalControls : 0.0;
+    }
+
+    public void setCoverage(double coverage) {
+        this.coverage = coverage;
     }
 
     @com.fasterxml.jackson.annotation.JsonIgnore
     public int getEvaluatedControls() {
-        return passed + failed + unknown + error;
+        return getEvaluated();
     }
 
     @com.fasterxml.jackson.annotation.JsonIgnore
     public double getCoveragePercentage() {
-        return totalControls > 0 ? ((double) getEvaluatedControls() / totalControls) * 100.0 : 0.0;
+        return getCoverage() * 100.0;
     }
 }
