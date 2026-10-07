@@ -712,13 +712,13 @@ class AuditOrchestrationIntegrationTest {
 
         assertThat(audit.getStatus()).isEqualTo(AuditStatus.COMPLETED.name());
         assertThat(audit.getSummary().getTotalControls()).isEqualTo(21);
-        assertThat(audit.getSummary().getPassed()).isEqualTo(4);
+        assertThat(audit.getSummary().getPassed()).isEqualTo(14);
         assertThat(audit.getSummary().getFailed()).isEqualTo(0);
-        assertThat(audit.getSummary().getNotApplicable()).isEqualTo(17);
-        assertThat(audit.getSummary().getEvaluatedControls()).isEqualTo(4);
-        assertThat(audit.getSummary().getCoveragePercentage()).isEqualTo(4.0 / 21.0 * 100.0);
-        assertThat(audit.getSummary().getEvaluated()).isEqualTo(4);
-        assertThat(audit.getSummary().getCoverage()).isEqualTo(4.0 / 21.0);
+        assertThat(audit.getSummary().getNotApplicable()).isEqualTo(7);
+        assertThat(audit.getSummary().getEvaluatedControls()).isEqualTo(14);
+        assertThat(audit.getSummary().getCoveragePercentage()).isEqualTo(14.0 / 21.0 * 100.0);
+        assertThat(audit.getSummary().getEvaluated()).isEqualTo(14);
+        assertThat(audit.getSummary().getCoverage()).isEqualTo(14.0 / 21.0);
         assertThat(audit.getComplianceScore()).isEqualTo(100.0);
 
         System.out.println("=== RAW AUDIT SUMMARY: UNVERSIONED CISCO CONFIG ===");
@@ -760,14 +760,14 @@ class AuditOrchestrationIntegrationTest {
                 .isEqualTo(sumA.getPassed() + sumA.getFailed() + sumA.getUnknown() + sumA.getNotApplicable() + sumA.getError());
         assertThat(sumA.getNotApplicable()).isEqualTo(0);
 
-        // Scenario B: 17 not-applicable for 17.x-specific rules (Cisco without version line -> osVersion UNKNOWN -> 17 notApplicable, 4 version-agnostic rules pass)
+        // Scenario B: 7 not-applicable for 17.x-specific CIS rules (Cisco without version line -> osVersion UNKNOWN -> 7 notApplicable, 14 version-agnostic NIST/ISO rules)
         Audit auditAllNotApplicable = auditOrchestrationService.startAudit("dev-nonapp-01", "cfg-nonapp-001", "ver-nonapp-001", ciscoConfigNoVersion);
         AuditSummary sumB = auditAllNotApplicable.getSummary();
         assertThat(sumB.getTotalControls())
                 .isEqualTo(sumB.getPassed() + sumB.getFailed() + sumB.getUnknown() + sumB.getNotApplicable() + sumB.getError());
-        assertThat(sumB.getNotApplicable()).isEqualTo(17);
+        assertThat(sumB.getNotApplicable()).isEqualTo(7);
         assertThat(sumB.getPassed()).isEqualTo(4);
-        assertThat(auditAllNotApplicable.getComplianceScore()).isEqualTo(100.0);
+        assertThat(auditAllNotApplicable.getComplianceScore()).isEqualTo(28.6);
 
         // Scenario C: Rule evaluator exception -> error++
         RuleEvaluator throwingEvaluator = (canonical, rule) -> {

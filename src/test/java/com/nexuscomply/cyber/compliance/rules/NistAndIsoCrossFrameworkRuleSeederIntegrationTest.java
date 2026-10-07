@@ -295,4 +295,44 @@ class NistAndIsoCrossFrameworkRuleSeederIntegrationTest {
             assertThat(result.getStatus()).isEqualTo(RuleResultStatus.PASS);
         }
     }
+
+    @Test
+    @DisplayName("Task 2.15: Multi-vendor rule applicability expanded across all 4 supported vendors for NIST and ISO rules")
+    void testMultiVendorRuleApplicabilityForNistAndIso() {
+        NistSp80053RuleSeeder.SeedResult nistResult = nistSeeder.seed();
+        Iso27001RuleSeeder.SeedResult isoResult = isoSeeder.seed();
+
+        List<ComplianceRuleDocument> nistRules = nistResult.getRules();
+        List<ComplianceRuleDocument> isoRules = isoResult.getRules();
+
+        assertThat(nistRules).hasSize(7);
+        assertThat(isoRules).hasSize(7);
+
+        List<String> expectedVendors = List.of("Cisco", "Juniper", "Fortinet", "Palo Alto");
+        List<String> expectedPlatforms = List.of("IOS", "IOS-XE", "JUNOS", "FortiOS", "PAN-OS");
+
+        for (ComplianceRuleDocument rule : nistRules) {
+            assertThat(rule.getApplicableVendors())
+                    .as("NIST rule %s applicableVendors", rule.getRuleCode())
+                    .containsExactlyElementsOf(expectedVendors);
+            assertThat(rule.getApplicablePlatforms())
+                    .as("NIST rule %s applicablePlatforms", rule.getRuleCode())
+                    .containsExactlyElementsOf(expectedPlatforms);
+            assertThat(rule.getApplicableOsVersions())
+                    .as("NIST rule %s applicableOsVersions", rule.getRuleCode())
+                    .isEmpty();
+        }
+
+        for (ComplianceRuleDocument rule : isoRules) {
+            assertThat(rule.getApplicableVendors())
+                    .as("ISO rule %s applicableVendors", rule.getRuleCode())
+                    .containsExactlyElementsOf(expectedVendors);
+            assertThat(rule.getApplicablePlatforms())
+                    .as("ISO rule %s applicablePlatforms", rule.getRuleCode())
+                    .containsExactlyElementsOf(expectedPlatforms);
+            assertThat(rule.getApplicableOsVersions())
+                    .as("ISO rule %s applicableOsVersions", rule.getRuleCode())
+                    .isEmpty();
+        }
+    }
 }

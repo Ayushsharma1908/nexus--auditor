@@ -169,7 +169,7 @@ class PaloAltoPipelineIntegrationTest {
     }
 
     @Test
-    @DisplayName("Pipeline Integration: PAN-OS set-format fixture with all 3 frameworks seeded -> 21 notApplicable, complianceScore null")
+    @DisplayName("Pipeline Integration: PAN-OS set-format fixture with all 3 frameworks seeded -> 7 notApplicable, 8 passed, 6 unknown, complianceScore 57.1")
     void testPipelineIntegration_PanOsSetFormatFixture() throws Exception {
         // Seed all 21 rules across CIS, NIST, ISO
         cisSeeder.seed();
@@ -208,12 +208,12 @@ class PaloAltoPipelineIntegrationTest {
         System.out.println(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(normDoc));
 
         assertThat(auditDoc.getSummary().getTotalControls()).isEqualTo(21);
-        assertThat(auditDoc.getSummary().getNotApplicable()).isEqualTo(17);
-        assertThat(auditDoc.getSummary().getPassed()).isEqualTo(2);
+        assertThat(auditDoc.getSummary().getNotApplicable()).isEqualTo(7);
+        assertThat(auditDoc.getSummary().getPassed()).isEqualTo(8);
         assertThat(auditDoc.getSummary().getFailed()).isEqualTo(0);
-        assertThat(auditDoc.getSummary().getUnknown()).isEqualTo(2);
+        assertThat(auditDoc.getSummary().getUnknown()).isEqualTo(6);
         assertThat(auditDoc.getSummary().getError()).isEqualTo(0);
-        assertThat(auditDoc.getComplianceScore()).isEqualTo(50.0);
+        assertThat(auditDoc.getComplianceScore()).isEqualTo(57.1);
         List<String> expectedFrameworkIds = frameworkRepository.findAll().stream()
                 .map(FrameworkDocument::getId)
                 .toList();
@@ -222,7 +222,7 @@ class PaloAltoPipelineIntegrationTest {
     }
 
     @Test
-    @DisplayName("Pipeline Integration: PAN-OS XML running-config export fixture with all 3 frameworks seeded -> 17 notApplicable, 2 passed, 2 unknown")
+    @DisplayName("Pipeline Integration: PAN-OS XML running-config export fixture with all 3 frameworks seeded -> 7 notApplicable, 8 passed, 6 unknown")
     void testPipelineIntegration_PanOsXmlFormatFixture() throws Exception {
         // Seed all 21 rules across CIS, NIST, ISO
         cisSeeder.seed();
@@ -327,12 +327,12 @@ class PaloAltoPipelineIntegrationTest {
         System.out.println(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(normDoc));
 
         assertThat(auditDoc.getSummary().getTotalControls()).isEqualTo(21);
-        assertThat(auditDoc.getSummary().getNotApplicable()).isEqualTo(17);
-        assertThat(auditDoc.getSummary().getPassed()).isEqualTo(2);
+        assertThat(auditDoc.getSummary().getNotApplicable()).isEqualTo(7);
+        assertThat(auditDoc.getSummary().getPassed()).isEqualTo(8);
         assertThat(auditDoc.getSummary().getFailed()).isEqualTo(0);
-        assertThat(auditDoc.getSummary().getUnknown()).isEqualTo(2);
+        assertThat(auditDoc.getSummary().getUnknown()).isEqualTo(6);
         assertThat(auditDoc.getSummary().getError()).isEqualTo(0);
-        assertThat(auditDoc.getComplianceScore()).isEqualTo(50.0);
+        assertThat(auditDoc.getComplianceScore()).isEqualTo(57.1);
         List<String> expectedFrameworkIds = frameworkRepository.findAll().stream()
                 .map(FrameworkDocument::getId)
                 .toList();
@@ -375,13 +375,13 @@ class PaloAltoPipelineIntegrationTest {
 
         AuditDocument auditDoc = auditRepository.findById(audit.getId()).orElseThrow();
         assertThat(auditDoc.getSummary().getTotalControls()).isEqualTo(21);
-        assertThat(auditDoc.getSummary().getNotApplicable()).isEqualTo(17);
-        assertThat(auditDoc.getSummary().getPassed()).isEqualTo(0);
+        assertThat(auditDoc.getSummary().getNotApplicable()).isEqualTo(7);
+        assertThat(auditDoc.getSummary().getPassed()).isEqualTo(6);
         assertThat(auditDoc.getSummary().getFailed()).isEqualTo(2);
-        assertThat(auditDoc.getSummary().getUnknown()).isEqualTo(2);
+        assertThat(auditDoc.getSummary().getUnknown()).isEqualTo(6);
         assertThat(auditDoc.getSummary().getError()).isEqualTo(0);
         assertThat(auditDoc.getSummary().getPassed() + auditDoc.getSummary().getFailed() + auditDoc.getSummary().getUnknown() + auditDoc.getSummary().getNotApplicable() + auditDoc.getSummary().getError()).isEqualTo(21);
-        assertThat(auditDoc.getComplianceScore()).isEqualTo(0.0);
+        assertThat(auditDoc.getComplianceScore()).isEqualTo(42.9);
 
         List<FindingDocument> findings = findingRepository.findByDeviceId(deviceId);
         assertThat(findings).hasSize(2);

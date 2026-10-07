@@ -242,19 +242,19 @@ class JuniperPipelineIntegrationTest {
                 .toList();
         assertThat(expectedFrameworkIds).hasSize(3);
 
-        // 6. Confirm vendor-neutral rule coverage for telnet and SSH version
+        // 6. Confirm vendor-neutral rule coverage across NIST and ISO
         assertThat(audit.getStatus()).isEqualTo("COMPLETED");
         assertThat(audit.getFrameworkIds()).containsExactlyInAnyOrderElementsOf(expectedFrameworkIds);
         AuditSummary sum = audit.getSummary();
         assertThat(sum).isNotNull();
         assertThat(sum.getTotalControls()).isEqualTo(21);
-        assertThat(sum.getPassed()).isEqualTo(2); // NIST-SC-8, ISO-A.10.1.1
+        assertThat(sum.getPassed()).isEqualTo(12); // NIST-IA-2, NIST-SC-8, NIST-CM-6, NIST-AU-2, NIST-AU-12, NIST-AU-8, ISO-A.9.4.2, ISO-A.10.1.1, ISO-A.13.1.1-SNMP, ISO-A.12.4.1, ISO-A.12.4.3, ISO-A.12.4.4
         assertThat(sum.getFailed()).isEqualTo(2); // NIST-AC-17, ISO-A.13.1.1-TELNET
         assertThat(sum.getUnknown()).isEqualTo(0);
-        assertThat(sum.getNotApplicable()).isEqualTo(17);
+        assertThat(sum.getNotApplicable()).isEqualTo(7);
         assertThat(sum.getError()).isEqualTo(0);
         assertThat(sum.getPassed() + sum.getFailed() + sum.getUnknown() + sum.getNotApplicable() + sum.getError()).isEqualTo(sum.getTotalControls());
-        assertThat(audit.getComplianceScore()).isEqualTo(50.0);
+        assertThat(audit.getComplianceScore()).isEqualTo(85.7);
 
         // Exactly 2 findings on security.telnet.enabled (1 NIST, 1 ISO)
         List<FindingDocument> findings = findingRepository.findByAuditId(auditId);
@@ -274,10 +274,10 @@ class JuniperPipelineIntegrationTest {
         AuditDocument persistedAuditDoc = auditRepository.findById(auditId).orElseThrow();
         assertThat(persistedAuditDoc.getStatus()).isEqualTo("COMPLETED");
         assertThat(persistedAuditDoc.getSummary().getTotalControls()).isEqualTo(21);
-        assertThat(persistedAuditDoc.getSummary().getPassed()).isEqualTo(2);
+        assertThat(persistedAuditDoc.getSummary().getPassed()).isEqualTo(12);
         assertThat(persistedAuditDoc.getSummary().getFailed()).isEqualTo(2);
-        assertThat(persistedAuditDoc.getSummary().getNotApplicable()).isEqualTo(17);
-        assertThat(persistedAuditDoc.getComplianceScore()).isEqualTo(50.0);
+        assertThat(persistedAuditDoc.getSummary().getNotApplicable()).isEqualTo(7);
+        assertThat(persistedAuditDoc.getComplianceScore()).isEqualTo(85.7);
 
         // Print raw persisted documents for surefire capture
         org.bson.Document rawNistRule = mongoTemplate.getCollection("compliance_rules")
@@ -360,14 +360,14 @@ class JuniperPipelineIntegrationTest {
 
         AuditSummary sum = audit.getSummary();
         assertThat(sum.getTotalControls()).isEqualTo(21);
-        assertThat(sum.getPassed()).isEqualTo(2); // NIST-SC-8, ISO-A.10.1.1 (ssh.version = 2)
+        assertThat(sum.getPassed()).isEqualTo(12); // NIST-IA-2, NIST-SC-8, NIST-CM-6, NIST-AU-2, NIST-AU-12, NIST-AU-8, ISO-A.9.4.2, ISO-A.10.1.1, ISO-A.13.1.1-SNMP, ISO-A.12.4.1, ISO-A.12.4.3, ISO-A.12.4.4
         assertThat(sum.getFailed()).isEqualTo(0);
         assertThat(sum.getUnknown()).isEqualTo(2); // NIST-AC-17, ISO-A.13.1.1-TELNET (telnet is unset/null)
-        assertThat(sum.getNotApplicable()).isEqualTo(17);
+        assertThat(sum.getNotApplicable()).isEqualTo(7);
         assertThat(sum.getError()).isEqualTo(0);
         assertThat(sum.getPassed() + sum.getFailed() + sum.getUnknown() + sum.getNotApplicable() + sum.getError()).isEqualTo(sum.getTotalControls());
-        // applicableControls = 21 - 17 = 4; passed = 2; score = (2/4)*100 = 50.0
-        assertThat(audit.getComplianceScore()).isEqualTo(50.0);
+        // applicableControls = 21 - 7 = 14; passed = 12; score = (12/14)*100 = 85.7
+        assertThat(audit.getComplianceScore()).isEqualTo(85.7);
 
         org.bson.Document rawAuditDoc = mongoTemplate.getCollection("audits")
                 .find(new org.bson.Document("_id", audit.getId())).first();

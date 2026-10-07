@@ -21,8 +21,8 @@
     "newValue" : false,
     "classification" : "IMPROVED"
   } ],
-  "affectedControlIds" : [ "5c461a8e-cd04-4398-9fa3-6dba195319b7", "df12a712-2b73-4533-a6b4-fe3cfa7af307", "941ba55a-1cc0-4e12-828a-c30f9237b016" ],
-  "affectedFindingIds" : [ "dafa9660-38d2-4035-8140-00e6ddac4ad3", "cc09bf88-2c6f-430f-86c0-a06cde7ca77a", "66eb4cec-a627-48b5-876c-b280a6714e28" ],
+  "affectedControlIds" : [ "da8aa10e-5214-4415-b269-b06e10d8d176", "3ecd4037-fcbe-4f34-a971-67abe792ac4c", "0da447c6-aeb3-4a6d-8641-ba90e07dcc39" ],
+  "affectedFindingIds" : [ "b401922e-969f-44b9-bc8a-8f56668effcb", "c1bf7fca-9000-4c0e-9bf1-64b31af3fbc4", "ccb43eb7-6239-4aa8-9147-59e09d7ac22e" ],
   "ruleResultsBefore" : {
     "CIS-1.1.1" : "UNKNOWN",
     "CIS-1.2.2" : "FAIL",
@@ -69,5 +69,5 @@
     "ISO-A.12.4.3" : "UNKNOWN",
     "ISO-A.12.4.4" : "UNKNOWN"
   },
-  "persistedSimulationId" : "6aa8991b-e626-4e08-bb0d-2ea98d2e6e70"
+  "persistedSimulationId" : "9343cc1c-4503-4a8c-87c9-6f1e8ac7f3e6"
 }

@@ -18,6 +18,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -279,6 +280,17 @@ public class Iso27001RuleSeeder {
             )
     );
 
+    public static final Set<String> MULTI_VENDOR_CANONICAL_FIELDS = Set.of(
+            "security.telnet.enabled",
+            "security.ssh.version",
+            "logging.syslog",
+            "logging.localLogging",
+            "ntp.configured",
+            "authentication.aaa",
+            "security.snmp.enabled",
+            "security.snmp.version"
+    );
+
     public static class SeedResult {
         private final FrameworkDocument framework;
         private final List<ControlDocument> controls;
@@ -407,7 +419,7 @@ public class Iso27001RuleSeeder {
             rule.setExpression(new RuleRequirement(def.getCanonicalField(), def.getOperator(), def.getExpectedValue()));
             rule.setSeverity(def.getSeverity());
             rule.setFrameworkIds(List.of(fw.getId()));
-            if ("security.telnet.enabled".equals(def.getCanonicalField()) || "security.ssh.version".equals(def.getCanonicalField())) {
+            if (MULTI_VENDOR_CANONICAL_FIELDS.contains(def.getCanonicalField())) {
                 rule.setApplicableVendors(List.of("Cisco", "Juniper", "Fortinet", "Palo Alto"));
                 rule.setApplicablePlatforms(List.of("IOS", "IOS-XE", "JUNOS", "FortiOS", "PAN-OS"));
                 rule.setApplicableOsVersions(List.of());

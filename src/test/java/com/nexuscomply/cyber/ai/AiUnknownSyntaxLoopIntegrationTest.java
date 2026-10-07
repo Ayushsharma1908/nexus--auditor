@@ -448,10 +448,10 @@ class AiUnknownSyntaxLoopIntegrationTest {
         assertThat(sum1.getTotalControls()).isEqualTo(sum2.getTotalControls()).isEqualTo(21);
         assertThat(sum1.getPassed()).isEqualTo(sum2.getPassed()).isEqualTo(2); // SSH version passes on NIST and ISO
         assertThat(sum1.getFailed()).isEqualTo(sum2.getFailed()).isEqualTo(2); // Telnet enabled fails on NIST and ISO
-        assertThat(sum1.getUnknown()).isEqualTo(sum2.getUnknown()).isEqualTo(0);
-        assertThat(sum1.getNotApplicable()).isEqualTo(sum2.getNotApplicable()).isEqualTo(17);
+        assertThat(sum1.getUnknown()).isEqualTo(sum2.getUnknown()).isEqualTo(10);
+        assertThat(sum1.getNotApplicable()).isEqualTo(sum2.getNotApplicable()).isEqualTo(7);
         assertThat(sum1.getError()).isEqualTo(sum2.getError()).isEqualTo(0);
-        assertThat(run1.getComplianceScore()).isEqualTo(run2.getComplianceScore()).isEqualTo(50.0);
+        assertThat(run1.getComplianceScore()).isEqualTo(run2.getComplianceScore()).isEqualTo(14.3);
     }
 
     @Test

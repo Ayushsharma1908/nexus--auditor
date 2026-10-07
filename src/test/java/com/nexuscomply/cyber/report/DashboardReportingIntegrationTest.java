@@ -536,7 +536,7 @@ class DashboardReportingIntegrationTest {
     void testCoverageAndUnknownVisibleInMarkdownAndNeverTreatedAsPass() {
         seedRulesAndTemplates();
 
-        // Juniper configuration with 2 passing rules, 2 UNKNOWN, and 17 notApplicable
+        // Juniper configuration with 2 passing rules, 12 UNKNOWN, and 7 notApplicable
         String junosConfig = String.join("\n",
                 "set system services ssh",
                 "set system services ssh protocol-version v2"
@@ -546,15 +546,15 @@ class DashboardReportingIntegrationTest {
         AuditReportResponse report = dashboardReportingService.getAuditReport(audit.getId());
         assertThat(report).isNotNull();
 
-        // Formula: (passed + failed) / (totalControls - notApplicable) -> (2 + 0) / (21 - 17) = 2/4 = 0.50 (50.0%)
-        assertThat(report.getCoverage()).isEqualTo(0.50);
-        assertThat(report.getUnknownCount()).isEqualTo(2);
-        assertThat(report.getNotApplicableCount()).isEqualTo(17);
+        // Formula: (passed + failed) / (totalControls - notApplicable) -> (2 + 0) / (21 - 7) = 2/14 = 0.142857... (14.3%)
+        assertThat(report.getCoverage()).isEqualTo(2.0 / 14.0);
+        assertThat(report.getUnknownCount()).isEqualTo(12);
+        assertThat(report.getNotApplicableCount()).isEqualTo(7);
 
         String md = report.getMarkdownReport();
-        assertThat(md).contains("| **Control Coverage** | 50.0% |");
-        assertThat(md).contains("| **UNKNOWN Controls (Pending Review)** | 2 |");
-        assertThat(md).contains("| **Not Applicable Controls** | 17 |");
+        assertThat(md).contains("| **Control Coverage** | 14.3% |");
+        assertThat(md).contains("| **UNKNOWN Controls (Pending Review)** | 12 |");
+        assertThat(md).contains("| **Not Applicable Controls** | 7 |");
         assertThat(md).contains("UNKNOWN means the field was not observed in the configuration; it is not a pass and may indicate a gap.");
 
         // Assert that UNKNOWN count was not credited to passed count

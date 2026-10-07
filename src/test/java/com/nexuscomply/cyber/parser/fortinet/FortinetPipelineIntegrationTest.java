@@ -265,19 +265,19 @@ class FortinetPipelineIntegrationTest {
                 .toList();
         assertThat(expectedFrameworkIds).hasSize(3);
 
-        // 6. Confirm vendor-neutral rule coverage for telnet and SSH version
+        // 6. Confirm vendor-neutral rule coverage across NIST and ISO
         assertThat(audit.getStatus()).isEqualTo("COMPLETED");
         assertThat(audit.getFrameworkIds()).containsExactlyInAnyOrderElementsOf(expectedFrameworkIds);
         AuditSummary sum = audit.getSummary();
         assertThat(sum).isNotNull();
         assertThat(sum.getTotalControls()).isEqualTo(21);
-        assertThat(sum.getPassed()).isEqualTo(0);
+        assertThat(sum.getPassed()).isEqualTo(8); // NIST-CM-6, ISO-A.13.1.1-SNMP, NIST-AU-2, ISO-A.12.4.1, NIST-AU-12, ISO-A.12.4.3, NIST-AU-8, ISO-A.12.4.4
         assertThat(sum.getFailed()).isEqualTo(2); // NIST-AC-17, ISO-A.13.1.1-TELNET
-        assertThat(sum.getUnknown()).isEqualTo(2); // NIST-SC-8, ISO-A.10.1.1 (ssh.version is null/gap)
-        assertThat(sum.getNotApplicable()).isEqualTo(17);
+        assertThat(sum.getUnknown()).isEqualTo(4); // NIST-SC-8, ISO-A.10.1.1 (ssh.version unset), NIST-IA-2, ISO-A.9.4.2 (aaa unset)
+        assertThat(sum.getNotApplicable()).isEqualTo(7);
         assertThat(sum.getError()).isEqualTo(0);
         assertThat(sum.getPassed() + sum.getFailed() + sum.getUnknown() + sum.getNotApplicable() + sum.getError()).isEqualTo(sum.getTotalControls());
-        assertThat(audit.getComplianceScore()).isEqualTo(0.0);
+        assertThat(audit.getComplianceScore()).isEqualTo(57.1);
 
         // Exactly 2 findings on security.telnet.enabled (1 NIST, 1 ISO)
         List<FindingDocument> findings = findingRepository.findByAuditId(auditId);
@@ -297,11 +297,11 @@ class FortinetPipelineIntegrationTest {
         AuditDocument persistedAuditDoc = auditRepository.findById(auditId).orElseThrow();
         assertThat(persistedAuditDoc.getStatus()).isEqualTo("COMPLETED");
         assertThat(persistedAuditDoc.getSummary().getTotalControls()).isEqualTo(21);
-        assertThat(persistedAuditDoc.getSummary().getPassed()).isEqualTo(0);
+        assertThat(persistedAuditDoc.getSummary().getPassed()).isEqualTo(8);
         assertThat(persistedAuditDoc.getSummary().getFailed()).isEqualTo(2);
-        assertThat(persistedAuditDoc.getSummary().getUnknown()).isEqualTo(2);
-        assertThat(persistedAuditDoc.getSummary().getNotApplicable()).isEqualTo(17);
-        assertThat(persistedAuditDoc.getComplianceScore()).isEqualTo(0.0);
+        assertThat(persistedAuditDoc.getSummary().getUnknown()).isEqualTo(4);
+        assertThat(persistedAuditDoc.getSummary().getNotApplicable()).isEqualTo(7);
+        assertThat(persistedAuditDoc.getComplianceScore()).isEqualTo(57.1);
 
         // Print raw persisted documents for surefire capture
         org.bson.Document rawNistRule = mongoTemplate.getCollection("compliance_rules")
@@ -418,14 +418,14 @@ class FortinetPipelineIntegrationTest {
 
         AuditSummary sum = audit.getSummary();
         assertThat(sum.getTotalControls()).isEqualTo(21);
-        assertThat(sum.getPassed()).isEqualTo(0);
+        assertThat(sum.getPassed()).isEqualTo(6); // AU-2, A.12.4.1, AU-12, A.12.4.3, AU-8, A.12.4.4
         assertThat(sum.getFailed()).isEqualTo(0);
-        assertThat(sum.getUnknown()).isEqualTo(4); // 2 telnet unset + 2 ssh version gap
-        assertThat(sum.getNotApplicable()).isEqualTo(17);
+        assertThat(sum.getUnknown()).isEqualTo(8); // 2 telnet unset + 2 ssh version gap + 2 snmp version unset + 2 aaa unset
+        assertThat(sum.getNotApplicable()).isEqualTo(7);
         assertThat(sum.getError()).isEqualTo(0);
         assertThat(sum.getPassed() + sum.getFailed() + sum.getUnknown() + sum.getNotApplicable() + sum.getError()).isEqualTo(sum.getTotalControls());
-        // Clean run with passed+failed == 0 yields complianceScore = null
-        assertThat(audit.getComplianceScore()).isNull();
+        // applicableControls = 21 - 7 = 14; passed = 6; score = (6/14)*100 = 42.9
+        assertThat(audit.getComplianceScore()).isEqualTo(42.9);
 
         org.bson.Document rawAuditDoc = mongoTemplate.getCollection("audits")
                 .find(new org.bson.Document("_id", audit.getId())).first();
