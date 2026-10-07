@@ -136,6 +136,7 @@ Every task goes through this cycle: Antigravity implements → reports back with
 - Task 2.14: End-to-End Demo Script & Report Export (`com.nexuscomply.cyber.demo`) — implemented; pending Claude review
 - Task 2.15: Expanded Vendor-Neutral Rule Coverage (`com.nexuscomply.cyber.compliance.rules`) — implemented; pending Claude review
 - Task 2.16: Schema & Continuity Sync for Gemini Integration (`schema1.md`, `NEXUS-COMPLY-CONTINUITY.md`) — DONE
+- Task 2.17: Resilient Gemini Provider Implementation (`com.nexuscomply.cyber.ai.service.GeminiSuggestionProvider`) — implemented; pending Claude review
 
 **Sub-step status:**
 | Sub-step | Status | Evidence / notes |
@@ -232,11 +233,12 @@ Every task goes through this cycle: Antigravity implements → reports back with
 | **Task 2.16 — Schema & Continuity Sync for Gemini Integration** | DONE | Implemented; schema1.md and continuity synced |
 | Architectural Documentation & Schema Alignment | DONE | Formally updated `schema1.md` Section 17 (`ai_mappings`) and Section 18 (`ai_jobs`) with architectural notes documenting live LLM provider (Google Gemini `gemini-2.5-flash`) integration via `GeminiSuggestionProvider` with strict 10-second client timeout window and automatic fallback delegate to `DeterministicStubSuggestionProvider`, preserving JSON contracts. Added Decision 23 in Section 3 documenting the live Gemini transition with 10-second timeout, immutable human approval gate (`PENDING_REVIEW` -> `APPROVED`), resilient fallback handling, and Spring Profile dual-mode toggle. |
 
-| **Task 2.17 — Resilient Gemini Provider Implementation** | NOT STARTED | not started |
-| Property Configuration & API Key Injection | NOT STARTED | Configure application properties (`nexuscomply.ai.gemini.api-key`, `nexuscomply.ai.gemini.model`, `nexuscomply.ai.gemini.timeout-seconds`, `nexuscomply.ai.provider`) supporting environment variable overrides (`GEMINI_API_KEY`). |
-| `GeminiSuggestionProvider` Implementation | NOT STARTED | Implement live Gemini client using structured JSON prompt/schema targeting `SuggestionResult` (`canonicalField`, `mappedValue`, `confidence`, `reason`). |
-| 10-Second Timeout & Resilient Fallback Handling | NOT STARTED | Implement strict 10-second client timeout and exception recovery delegating to `DeterministicStubSuggestionProvider.propose()`, ensuring zero audit interruption. |
-| Spring Profile / Property Dual-Mode Toggle | NOT STARTED | Configure conditional bean activation (`@ConditionalOnProperty`) enabling seamless switching between live Gemini and deterministic offline stub. |
+| **Task 2.17 — Resilient Gemini Provider Implementation** | AWAITING REVIEW | implemented; pending Claude review |
+| Property Configuration & API Key Injection | DONE | Configured application properties (`nexus.ai.provider=gemini`, `gemini.api.key=${GEMINI_API_KEY:}`, `gemini.api.model=gemini-2.5-flash`, `gemini.api.timeout-seconds=10`). |
+| `GeminiSuggestionProvider` Implementation | DONE | Implemented `GeminiSuggestionProvider` in `com.nexuscomply.cyber.ai.service` implementing `SuggestionProvider` with model `gemini-2.5-flash`, marked `@Primary` and `@Component`, using native Java 21 `HttpClient` with structured JSON prompt and response parsing (`canonicalField`, `mappedValue`, `confidence`, `rationale`). Validates candidate fields and values with `CanonicalFieldAllowlist`. |
+| 10-Second Timeout & Resilient Fallback Handling | DONE | Enforced strict client timeout (default 10 seconds). Catches `HttpTimeoutException`, HTTP non-200 errors (500, 429), malformed JSON, unparseable values, unallowed fields, and unconfigured API keys, automatically delegating to `DeterministicStubSuggestionProvider.propose()`. Zero exceptions surfaced to caller; audits complete normally (`AuditStatus.COMPLETED`). |
+| Spring Profile / Property Dual-Mode Toggle | DONE | Supports property switching via `nexus.ai.provider` (`gemini` vs `stub`). Setting `stub` immediately bypasses network calls and delegates to `DeterministicStubSuggestionProvider`. Deterministic stub remains an active `@Component` Spring bean. |
+| Gemini Provider Integration & Resiliency Tests (`GeminiSuggestionProviderTest`) | DONE | 11 unit/integration tests: blank/null API key fallback, stub provider mode fallback, successful Gemini response parsing with auth header `x-goog-api-key`, markdown code fence unwrapping, strict client timeout fallback, HTTP 500 fallback, HTTP 429 rate limit fallback, malformed JSON fallback, disallowed canonical field fallback, null/blank raw line safety, and human-in-the-loop review boundary verification (`PENDING_REVIEW` -> `APPROVED` via `AiMappingServiceImpl`). |
 
 ### Schema Deviations & Conventions (schema1.md Parity)
 1. **`remediation_templates` (schema1.md Sec 15):** Deliberately omitted `controlId` and `ruleId` from MongoDB documents because remediation templates are shared across multiple frameworks (CIS, NIST, ISO) that evaluate the same canonical security fact. Added `canonicalField`, `commandType` (`PLATFORM_GAP`, `DERIVABLE_REGEX`, `REPRESENTATIVE_EXAMPLE`), `confirmationStatus` (`CONFIRMED`, `UNCONFIRMED`), and `gapExplanation`.
@@ -248,17 +250,15 @@ Every task goes through this cycle: Antigravity implements → reports back with
 7. **`reports` (schema1.md Sec 19):** Schema defines `reports` collection for generated export files (PDF/JSON storage metadata). Dashboards, device postures, fleet summaries, and audit reports are computed-on-read from underlying domain collections (`audits`, `findings`, `evidence`, `remediation_plans`, `risk_assessments`, `drift_events`, `ai_mappings`) without persisting intermediate dashboard documents. Device list for fleet summary is derived from distinct `deviceId` values across `audits` and `normalized_configurations` collections.
 
 **If interrupted, last known state (be specific — see instructions at top of file):**
-Tasks 2.4, 2.5, 2.6, 2.7, 2.8, 2.9 (2.9b-2.9f), 2.10a, 2.10b, 2.10c, 2.11/2.11b, 2.12/2.12c, 2.13, 2.14, 2.15, and 2.16 are implemented; pending Claude review (Task 2.16 documentation sync DONE). Task 2.17 (Resilient Gemini Provider Implementation) is NOT STARTED. All tests pass with 0 failures, 0 errors, 0 skipped. Total test count: 232 tests across 29 test suites.
+Tasks 2.4, 2.5, 2.6, 2.7, 2.8, 2.9 (2.9b-2.9f), 2.10a, 2.10b, 2.10c, 2.11/2.11b, 2.12/2.12c, 2.13, 2.14, 2.15, 2.16, and 2.17 are implemented; pending Claude review. All tests pass with 0 failures, 0 errors, 0 skipped. Total test count: 243 tests across 30 test suites.
 
-**Last updated:** 2026-10-07 14:52:00 IST
+**Last updated:** 2026-10-07 15:20:00 IST
 
 ---
 
 ## SECTION 5 — What Comes After the Current Task
 
-Tasks 2.4 (Risk Scoring Engine), 2.5 (Juniper JunOS Parser), 2.6 (Fortinet FortiOS Parser), 2.7 (Palo Alto PAN-OS Parser), 2.8 (Remediation Templates Engine), 2.9 / 2.9b / 2.9c / 2.9d / 2.9e / 2.9f (Drift Detection Engine), 2.10a (Narrow Four-Vendor Rule Coverage), 2.10b (AI Unknown-Syntax Resolution Loop), 2.10c (AI Loop Refinements), 2.11/2.11b (What-If Simulation Engine), 2.12 (Unified Dashboard & Reporting Aggregation), 2.13 (Pre-Demo Hardening & Secret Redaction), 2.14 (End-to-End Demo Script & Report Export), 2.15 (Expanded Vendor-Neutral Rule Coverage), and 2.16 (Schema & Continuity Sync for Gemini Integration) are implemented; pending Claude review.
-
-Upcoming: Task 2.17 (Resilient Gemini Provider Implementation) — wiring live Google Gemini API client (`gemini-2.5-flash`) into `SuggestionProvider` bounded by a 10-second timeout window with automatic fallback to `DeterministicStubSuggestionProvider`.
+Tasks 2.4 (Risk Scoring Engine), 2.5 (Juniper JunOS Parser), 2.6 (Fortinet FortiOS Parser), 2.7 (Palo Alto PAN-OS Parser), 2.8 (Remediation Templates Engine), 2.9 / 2.9b / 2.9c / 2.9d / 2.9e / 2.9f (Drift Detection Engine), 2.10a (Narrow Four-Vendor Rule Coverage), 2.10b (AI Unknown-Syntax Resolution Loop), 2.10c (AI Loop Refinements), 2.11/2.11b (What-If Simulation Engine), 2.12 (Unified Dashboard & Reporting Aggregation), 2.13 (Pre-Demo Hardening & Secret Redaction), 2.14 (End-to-End Demo Script & Report Export), 2.15 (Expanded Vendor-Neutral Rule Coverage), 2.16 (Schema & Continuity Sync for Gemini Integration), and 2.17 (Resilient Gemini Provider Implementation) are implemented; pending Claude review.
 
 Per cyberlayer.pdf Section 33 and project roadmap, backend Cyber Layer service and engine implementation is feature-complete at the Java service layer.
 Remaining components outside Package B scope or for future integration:
