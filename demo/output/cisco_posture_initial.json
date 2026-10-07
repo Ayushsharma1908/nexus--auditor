@@ -1,0 +1,143 @@
+{
+  "deviceId" : "demo-cisco-01",
+  "vendor" : "Cisco",
+  "platform" : "IOS-XE",
+  "latestAuditSummary" : {
+    "totalControls" : 21,
+    "passed" : 0,
+    "failed" : 3,
+    "unknown" : 18,
+    "notApplicable" : 0,
+    "error" : 0,
+    "evaluated" : 21,
+    "coverage" : 1.0
+  },
+  "complianceScore" : 0.0,
+  "coverage" : 0.14285714285714285,
+  "unknownCount" : 18,
+  "notApplicableCount" : 0,
+  "openFindingsCount" : 3,
+  "openFindingsBySeverity" : {
+    "CRITICAL" : 0,
+    "HIGH" : 3,
+    "MEDIUM" : 0,
+    "LOW" : 0
+  },
+  "openFindingsByFramework" : {
+    "CIS" : 1,
+    "NIST" : 1,
+    "ISO" : 1
+  },
+  "topRiskAssessments" : [ {
+    "id" : "7d6cf6e2-8144-4954-b1a3-08031f3a1a58",
+    "auditId" : "f5289527-760c-4546-97ae-247b1b8d8e21",
+    "deviceId" : "demo-cisco-01",
+    "findingId" : "42384333-5ac8-4b23-a738-4fa3e9003353",
+    "score" : 68,
+    "level" : "HIGH",
+    "factors" : {
+      "severity" : 8.0,
+      "assetCriticality" : 5.0,
+      "exposure" : 5.0,
+      "exploitability" : 8.0,
+      "confidence" : 8.0,
+      "rawInputs" : {
+        "severity" : "HIGH",
+        "assetCriticality" : "MEDIUM",
+        "networkExposure" : "INTERNAL",
+        "exploitability" : "HIGH",
+        "confidence" : 0.8
+      },
+      "contributions" : {
+        "severity" : 28.0,
+        "assetCriticality" : 10.0,
+        "exposure" : 10.0,
+        "exploitability" : 12.0,
+        "confidence" : 8.0
+      },
+      "controlWeight" : 8.0
+    },
+    "calculationVersion" : "1.0",
+    "assetCriticalitySource" : "DEFAULT_PLACEHOLDER",
+    "networkExposureSource" : "DEFAULT_PLACEHOLDER",
+    "confidence" : 0.8,
+    "confidenceSource" : "VENDOR_DETECTION",
+    "calculatedAt" : 1791357104.362000000,
+    "createdAt" : 1791357104.362000000,
+    "updatedAt" : 1791357104.362000000
+  }, {
+    "id" : "012078eb-2082-441b-b952-dadd43b4c722",
+    "auditId" : "f5289527-760c-4546-97ae-247b1b8d8e21",
+    "deviceId" : "demo-cisco-01",
+    "findingId" : "7d9df767-e5b0-47a7-87ff-91101b3dce71",
+    "score" : 68,
+    "level" : "HIGH",
+    "factors" : {
+      "severity" : 8.0,
+      "assetCriticality" : 5.0,
+      "exposure" : 5.0,
+      "exploitability" : 8.0,
+      "confidence" : 8.0,
+      "rawInputs" : {
+        "severity" : "HIGH",
+        "assetCriticality" : "MEDIUM",
+        "networkExposure" : "INTERNAL",
+        "exploitability" : "HIGH",
+        "confidence" : 0.8
+      },
+      "contributions" : {
+        "severity" : 28.0,
+        "assetCriticality" : 10.0,
+        "exposure" : 10.0,
+        "exploitability" : 12.0,
+        "confidence" : 8.0
+      },
+      "controlWeight" : 8.0
+    },
+    "calculationVersion" : "1.0",
+    "assetCriticalitySource" : "DEFAULT_PLACEHOLDER",
+    "networkExposureSource" : "DEFAULT_PLACEHOLDER",
+    "confidence" : 0.8,
+    "confidenceSource" : "VENDOR_DETECTION",
+    "calculatedAt" : 1791357104.366000000,
+    "createdAt" : 1791357104.366000000,
+    "updatedAt" : 1791357104.366000000
+  }, {
+    "id" : "6a5acb3b-a6ac-4e36-b733-3ec141a6ddb9",
+    "auditId" : "f5289527-760c-4546-97ae-247b1b8d8e21",
+    "deviceId" : "demo-cisco-01",
+    "findingId" : "9bb187a5-4f77-499e-948b-d258cb50d021",
+    "score" : 68,
+    "level" : "HIGH",
+    "factors" : {
+      "severity" : 8.0,
+      "assetCriticality" : 5.0,
+      "exposure" : 5.0,
+      "exploitability" : 8.0,
+      "confidence" : 8.0,
+      "rawInputs" : {
+        "severity" : "HIGH",
+        "assetCriticality" : "MEDIUM",
+        "networkExposure" : "INTERNAL",
+        "exploitability" : "HIGH",
+        "confidence" : 0.8
+      },
+      "contributions" : {
+        "severity" : 28.0,
+        "assetCriticality" : 10.0,
+        "exposure" : 10.0,
+        "exploitability" : 12.0,
+        "confidence" : 8.0
+      },
+      "controlWeight" : 8.0
+    },
+    "calculationVersion" : "1.0",
+    "assetCriticalitySource" : "DEFAULT_PLACEHOLDER",
+    "networkExposureSource" : "DEFAULT_PLACEHOLDER",
+    "confidence" : 0.8,
+    "confidenceSource" : "VENDOR_DETECTION",
+    "calculatedAt" : 1791357104.368000000,
+    "createdAt" : 1791357104.368000000,
+    "updatedAt" : 1791357104.368000000
+  } ]
+}

@@ -1,0 +1,73 @@
+{
+  "deviceId" : "demo-cisco-01",
+  "baseConfigurationVersionId" : "v1.0",
+  "status" : "COMPLETED",
+  "before" : {
+    "complianceScore" : 0.0,
+    "riskScore" : 70,
+    "failedControls" : 3
+  },
+  "after" : {
+    "complianceScore" : 14.3,
+    "riskScore" : 0,
+    "failedControls" : 0
+  },
+  "findingDelta" : -3,
+  "riskDelta" : -70,
+  "impact" : "DECREASED",
+  "changes" : [ {
+    "canonicalField" : "security.telnet.enabled",
+    "oldValue" : true,
+    "newValue" : false,
+    "classification" : "IMPROVED"
+  } ],
+  "affectedControlIds" : [ "b73480a4-946c-4a64-8012-5f52c51c7c72", "4c7279c6-05d0-482e-98f7-b8f585f359a2", "6c5bb765-f9ff-4424-bf02-2ec68fa799da" ],
+  "affectedFindingIds" : [ "42384333-5ac8-4b23-a738-4fa3e9003353", "7d9df767-e5b0-47a7-87ff-91101b3dce71", "9bb187a5-4f77-499e-948b-d258cb50d021" ],
+  "ruleResultsBefore" : {
+    "CIS-1.1.1" : "UNKNOWN",
+    "CIS-1.2.2" : "FAIL",
+    "CIS-2.1.1.2" : "UNKNOWN",
+    "CIS-1.5.9" : "UNKNOWN",
+    "CIS-2.2.1" : "UNKNOWN",
+    "CIS-2.2.2" : "UNKNOWN",
+    "CIS-2.3.2" : "UNKNOWN",
+    "NIST-IA-2" : "UNKNOWN",
+    "NIST-AC-17" : "FAIL",
+    "NIST-SC-8" : "UNKNOWN",
+    "NIST-CM-6" : "UNKNOWN",
+    "NIST-AU-2" : "UNKNOWN",
+    "NIST-AU-12" : "UNKNOWN",
+    "NIST-AU-8" : "UNKNOWN",
+    "ISO-A.9.4.2" : "UNKNOWN",
+    "ISO-A.13.1.1-TELNET" : "FAIL",
+    "ISO-A.10.1.1" : "UNKNOWN",
+    "ISO-A.13.1.1-SNMP" : "UNKNOWN",
+    "ISO-A.12.4.1" : "UNKNOWN",
+    "ISO-A.12.4.3" : "UNKNOWN",
+    "ISO-A.12.4.4" : "UNKNOWN"
+  },
+  "ruleResultsAfter" : {
+    "CIS-1.1.1" : "UNKNOWN",
+    "CIS-1.2.2" : "PASS",
+    "CIS-2.1.1.2" : "UNKNOWN",
+    "CIS-1.5.9" : "UNKNOWN",
+    "CIS-2.2.1" : "UNKNOWN",
+    "CIS-2.2.2" : "UNKNOWN",
+    "CIS-2.3.2" : "UNKNOWN",
+    "NIST-IA-2" : "UNKNOWN",
+    "NIST-AC-17" : "PASS",
+    "NIST-SC-8" : "UNKNOWN",
+    "NIST-CM-6" : "UNKNOWN",
+    "NIST-AU-2" : "UNKNOWN",
+    "NIST-AU-12" : "UNKNOWN",
+    "NIST-AU-8" : "UNKNOWN",
+    "ISO-A.9.4.2" : "UNKNOWN",
+    "ISO-A.13.1.1-TELNET" : "PASS",
+    "ISO-A.10.1.1" : "UNKNOWN",
+    "ISO-A.13.1.1-SNMP" : "UNKNOWN",
+    "ISO-A.12.4.1" : "UNKNOWN",
+    "ISO-A.12.4.3" : "UNKNOWN",
+    "ISO-A.12.4.4" : "UNKNOWN"
+  },
+  "persistedSimulationId" : "2eedae25-9a77-4bb2-aa7d-8640337a311b"
+}

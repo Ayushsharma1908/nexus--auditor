@@ -1,0 +1,478 @@
+{
+  "totalDevices" : 4,
+  "devicesByVendor" : {
+    "Cisco" : 1,
+    "Juniper" : 1,
+    "Fortinet" : 1,
+    "Palo Alto" : 1
+  },
+  "fleetComplianceScore" : 0.0,
+  "totalAudits" : 4,
+  "totalOpenFindings" : 9,
+  "findingsBySeverity" : {
+    "CRITICAL" : 0,
+    "HIGH" : 9,
+    "MEDIUM" : 0,
+    "LOW" : 0
+  },
+  "findingsByFramework" : {
+    "CIS" : 1,
+    "NIST" : 4,
+    "ISO" : 4
+  },
+  "devicePostures" : [ {
+    "deviceId" : "demo-cisco-01",
+    "vendor" : "Cisco",
+    "platform" : "IOS-XE",
+    "latestAuditSummary" : {
+      "totalControls" : 21,
+      "passed" : 0,
+      "failed" : 3,
+      "unknown" : 18,
+      "notApplicable" : 0,
+      "error" : 0,
+      "evaluated" : 21,
+      "coverage" : 1.0
+    },
+    "complianceScore" : 0.0,
+    "coverage" : 0.14285714285714285,
+    "unknownCount" : 18,
+    "notApplicableCount" : 0,
+    "openFindingsCount" : 3,
+    "openFindingsBySeverity" : {
+      "CRITICAL" : 0,
+      "HIGH" : 3,
+      "MEDIUM" : 0,
+      "LOW" : 0
+    },
+    "openFindingsByFramework" : {
+      "CIS" : 1,
+      "NIST" : 1,
+      "ISO" : 1
+    },
+    "topRiskAssessments" : [ {
+      "id" : "7d6cf6e2-8144-4954-b1a3-08031f3a1a58",
+      "auditId" : "f5289527-760c-4546-97ae-247b1b8d8e21",
+      "deviceId" : "demo-cisco-01",
+      "findingId" : "42384333-5ac8-4b23-a738-4fa3e9003353",
+      "score" : 68,
+      "level" : "HIGH",
+      "factors" : {
+        "severity" : 8.0,
+        "assetCriticality" : 5.0,
+        "exposure" : 5.0,
+        "exploitability" : 8.0,
+        "confidence" : 8.0,
+        "rawInputs" : {
+          "severity" : "HIGH",
+          "assetCriticality" : "MEDIUM",
+          "networkExposure" : "INTERNAL",
+          "exploitability" : "HIGH",
+          "confidence" : 0.8
+        },
+        "contributions" : {
+          "severity" : 28.0,
+          "assetCriticality" : 10.0,
+          "exposure" : 10.0,
+          "exploitability" : 12.0,
+          "confidence" : 8.0
+        },
+        "controlWeight" : 8.0
+      },
+      "calculationVersion" : "1.0",
+      "assetCriticalitySource" : "DEFAULT_PLACEHOLDER",
+      "networkExposureSource" : "DEFAULT_PLACEHOLDER",
+      "confidence" : 0.8,
+      "confidenceSource" : "VENDOR_DETECTION",
+      "calculatedAt" : 1791357104.362000000,
+      "createdAt" : 1791357104.362000000,
+      "updatedAt" : 1791357104.362000000
+    }, {
+      "id" : "012078eb-2082-441b-b952-dadd43b4c722",
+      "auditId" : "f5289527-760c-4546-97ae-247b1b8d8e21",
+      "deviceId" : "demo-cisco-01",
+      "findingId" : "7d9df767-e5b0-47a7-87ff-91101b3dce71",
+      "score" : 68,
+      "level" : "HIGH",
+      "factors" : {
+        "severity" : 8.0,
+        "assetCriticality" : 5.0,
+        "exposure" : 5.0,
+        "exploitability" : 8.0,
+        "confidence" : 8.0,
+        "rawInputs" : {
+          "severity" : "HIGH",
+          "assetCriticality" : "MEDIUM",
+          "networkExposure" : "INTERNAL",
+          "exploitability" : "HIGH",
+          "confidence" : 0.8
+        },
+        "contributions" : {
+          "severity" : 28.0,
+          "assetCriticality" : 10.0,
+          "exposure" : 10.0,
+          "exploitability" : 12.0,
+          "confidence" : 8.0
+        },
+        "controlWeight" : 8.0
+      },
+      "calculationVersion" : "1.0",
+      "assetCriticalitySource" : "DEFAULT_PLACEHOLDER",
+      "networkExposureSource" : "DEFAULT_PLACEHOLDER",
+      "confidence" : 0.8,
+      "confidenceSource" : "VENDOR_DETECTION",
+      "calculatedAt" : 1791357104.366000000,
+      "createdAt" : 1791357104.366000000,
+      "updatedAt" : 1791357104.366000000
+    }, {
+      "id" : "6a5acb3b-a6ac-4e36-b733-3ec141a6ddb9",
+      "auditId" : "f5289527-760c-4546-97ae-247b1b8d8e21",
+      "deviceId" : "demo-cisco-01",
+      "findingId" : "9bb187a5-4f77-499e-948b-d258cb50d021",
+      "score" : 68,
+      "level" : "HIGH",
+      "factors" : {
+        "severity" : 8.0,
+        "assetCriticality" : 5.0,
+        "exposure" : 5.0,
+        "exploitability" : 8.0,
+        "confidence" : 8.0,
+        "rawInputs" : {
+          "severity" : "HIGH",
+          "assetCriticality" : "MEDIUM",
+          "networkExposure" : "INTERNAL",
+          "exploitability" : "HIGH",
+          "confidence" : 0.8
+        },
+        "contributions" : {
+          "severity" : 28.0,
+          "assetCriticality" : 10.0,
+          "exposure" : 10.0,
+          "exploitability" : 12.0,
+          "confidence" : 8.0
+        },
+        "controlWeight" : 8.0
+      },
+      "calculationVersion" : "1.0",
+      "assetCriticalitySource" : "DEFAULT_PLACEHOLDER",
+      "networkExposureSource" : "DEFAULT_PLACEHOLDER",
+      "confidence" : 0.8,
+      "confidenceSource" : "VENDOR_DETECTION",
+      "calculatedAt" : 1791357104.368000000,
+      "createdAt" : 1791357104.368000000,
+      "updatedAt" : 1791357104.368000000
+    } ]
+  }, {
+    "deviceId" : "demo-juniper-01",
+    "vendor" : "Juniper",
+    "platform" : "JUNOS",
+    "latestAuditSummary" : {
+      "totalControls" : 21,
+      "passed" : 0,
+      "failed" : 2,
+      "unknown" : 2,
+      "notApplicable" : 17,
+      "error" : 0,
+      "evaluated" : 4,
+      "coverage" : 0.19047619047619047
+    },
+    "complianceScore" : 0.0,
+    "coverage" : 0.5,
+    "unknownCount" : 2,
+    "notApplicableCount" : 17,
+    "openFindingsCount" : 2,
+    "openFindingsBySeverity" : {
+      "CRITICAL" : 0,
+      "HIGH" : 2,
+      "MEDIUM" : 0,
+      "LOW" : 0
+    },
+    "openFindingsByFramework" : {
+      "NIST" : 1,
+      "ISO" : 1
+    },
+    "topRiskAssessments" : [ {
+      "id" : "c0a61c9f-d82f-431f-a7db-6a2c75a6b3cb",
+      "auditId" : "74d87d15-10b1-432c-8b9f-37affa5fb0d7",
+      "deviceId" : "demo-juniper-01",
+      "findingId" : "8454e05b-3cd5-40b5-b665-649b3a0a18ab",
+      "score" : 67,
+      "level" : "HIGH",
+      "factors" : {
+        "severity" : 8.0,
+        "assetCriticality" : 5.0,
+        "exposure" : 5.0,
+        "exploitability" : 8.0,
+        "confidence" : 7.0,
+        "rawInputs" : {
+          "severity" : "HIGH",
+          "assetCriticality" : "MEDIUM",
+          "networkExposure" : "INTERNAL",
+          "exploitability" : "HIGH",
+          "confidence" : 0.7
+        },
+        "contributions" : {
+          "severity" : 28.0,
+          "assetCriticality" : 10.0,
+          "exposure" : 10.0,
+          "exploitability" : 12.0,
+          "confidence" : 7.0
+        },
+        "controlWeight" : 8.0
+      },
+      "calculationVersion" : "1.0",
+      "assetCriticalitySource" : "DEFAULT_PLACEHOLDER",
+      "networkExposureSource" : "DEFAULT_PLACEHOLDER",
+      "confidence" : 0.7,
+      "confidenceSource" : "VENDOR_DETECTION",
+      "calculatedAt" : 1791357104.422000000,
+      "createdAt" : 1791357104.422000000,
+      "updatedAt" : 1791357104.422000000
+    }, {
+      "id" : "4877ea6e-d028-458d-bc06-110220bb9360",
+      "auditId" : "74d87d15-10b1-432c-8b9f-37affa5fb0d7",
+      "deviceId" : "demo-juniper-01",
+      "findingId" : "3e72f6b8-6729-42b6-ba3c-211300e4f3f3",
+      "score" : 67,
+      "level" : "HIGH",
+      "factors" : {
+        "severity" : 8.0,
+        "assetCriticality" : 5.0,
+        "exposure" : 5.0,
+        "exploitability" : 8.0,
+        "confidence" : 7.0,
+        "rawInputs" : {
+          "severity" : "HIGH",
+          "assetCriticality" : "MEDIUM",
+          "networkExposure" : "INTERNAL",
+          "exploitability" : "HIGH",
+          "confidence" : 0.7
+        },
+        "contributions" : {
+          "severity" : 28.0,
+          "assetCriticality" : 10.0,
+          "exposure" : 10.0,
+          "exploitability" : 12.0,
+          "confidence" : 7.0
+        },
+        "controlWeight" : 8.0
+      },
+      "calculationVersion" : "1.0",
+      "assetCriticalitySource" : "DEFAULT_PLACEHOLDER",
+      "networkExposureSource" : "DEFAULT_PLACEHOLDER",
+      "confidence" : 0.7,
+      "confidenceSource" : "VENDOR_DETECTION",
+      "calculatedAt" : 1791357104.423000000,
+      "createdAt" : 1791357104.423000000,
+      "updatedAt" : 1791357104.423000000
+    } ]
+  }, {
+    "deviceId" : "demo-fortinet-01",
+    "vendor" : "Fortinet",
+    "platform" : "FortiOS",
+    "latestAuditSummary" : {
+      "totalControls" : 21,
+      "passed" : 0,
+      "failed" : 2,
+      "unknown" : 2,
+      "notApplicable" : 17,
+      "error" : 0,
+      "evaluated" : 4,
+      "coverage" : 0.19047619047619047
+    },
+    "complianceScore" : 0.0,
+    "coverage" : 0.5,
+    "unknownCount" : 2,
+    "notApplicableCount" : 17,
+    "openFindingsCount" : 2,
+    "openFindingsBySeverity" : {
+      "CRITICAL" : 0,
+      "HIGH" : 2,
+      "MEDIUM" : 0,
+      "LOW" : 0
+    },
+    "openFindingsByFramework" : {
+      "NIST" : 1,
+      "ISO" : 1
+    },
+    "topRiskAssessments" : [ {
+      "id" : "05a73a94-86f7-42ad-a2ea-2ffad341c1af",
+      "auditId" : "22b495ca-75c8-4403-8f6f-593b7f32ba47",
+      "deviceId" : "demo-fortinet-01",
+      "findingId" : "6a9f1925-fd86-4b1e-9559-f4ce24e7f124",
+      "score" : 67,
+      "level" : "HIGH",
+      "factors" : {
+        "severity" : 8.0,
+        "assetCriticality" : 5.0,
+        "exposure" : 5.0,
+        "exploitability" : 8.0,
+        "confidence" : 7.0,
+        "rawInputs" : {
+          "severity" : "HIGH",
+          "assetCriticality" : "MEDIUM",
+          "networkExposure" : "INTERNAL",
+          "exploitability" : "HIGH",
+          "confidence" : 0.7
+        },
+        "contributions" : {
+          "severity" : 28.0,
+          "assetCriticality" : 10.0,
+          "exposure" : 10.0,
+          "exploitability" : 12.0,
+          "confidence" : 7.0
+        },
+        "controlWeight" : 8.0
+      },
+      "calculationVersion" : "1.0",
+      "assetCriticalitySource" : "DEFAULT_PLACEHOLDER",
+      "networkExposureSource" : "DEFAULT_PLACEHOLDER",
+      "confidence" : 0.7,
+      "confidenceSource" : "VENDOR_DETECTION",
+      "calculatedAt" : 1791357104.465000000,
+      "createdAt" : 1791357104.465000000,
+      "updatedAt" : 1791357104.465000000
+    }, {
+      "id" : "3570a636-5b88-4667-af82-834c37aea545",
+      "auditId" : "22b495ca-75c8-4403-8f6f-593b7f32ba47",
+      "deviceId" : "demo-fortinet-01",
+      "findingId" : "bf1df269-80fe-4a4e-ad8e-e2d9a3d1bb12",
+      "score" : 67,
+      "level" : "HIGH",
+      "factors" : {
+        "severity" : 8.0,
+        "assetCriticality" : 5.0,
+        "exposure" : 5.0,
+        "exploitability" : 8.0,
+        "confidence" : 7.0,
+        "rawInputs" : {
+          "severity" : "HIGH",
+          "assetCriticality" : "MEDIUM",
+          "networkExposure" : "INTERNAL",
+          "exploitability" : "HIGH",
+          "confidence" : 0.7
+        },
+        "contributions" : {
+          "severity" : 28.0,
+          "assetCriticality" : 10.0,
+          "exposure" : 10.0,
+          "exploitability" : 12.0,
+          "confidence" : 7.0
+        },
+        "controlWeight" : 8.0
+      },
+      "calculationVersion" : "1.0",
+      "assetCriticalitySource" : "DEFAULT_PLACEHOLDER",
+      "networkExposureSource" : "DEFAULT_PLACEHOLDER",
+      "confidence" : 0.7,
+      "confidenceSource" : "VENDOR_DETECTION",
+      "calculatedAt" : 1791357104.466000000,
+      "createdAt" : 1791357104.466000000,
+      "updatedAt" : 1791357104.466000000
+    } ]
+  }, {
+    "deviceId" : "demo-paloalto-01",
+    "vendor" : "Palo Alto",
+    "platform" : "PAN-OS",
+    "latestAuditSummary" : {
+      "totalControls" : 21,
+      "passed" : 0,
+      "failed" : 2,
+      "unknown" : 2,
+      "notApplicable" : 17,
+      "error" : 0,
+      "evaluated" : 4,
+      "coverage" : 0.19047619047619047
+    },
+    "complianceScore" : 0.0,
+    "coverage" : 0.5,
+    "unknownCount" : 2,
+    "notApplicableCount" : 17,
+    "openFindingsCount" : 2,
+    "openFindingsBySeverity" : {
+      "CRITICAL" : 0,
+      "HIGH" : 2,
+      "MEDIUM" : 0,
+      "LOW" : 0
+    },
+    "openFindingsByFramework" : {
+      "NIST" : 1,
+      "ISO" : 1
+    },
+    "topRiskAssessments" : [ {
+      "id" : "b2a9c76a-d28b-4cec-8d9f-349331ca7588",
+      "auditId" : "9d0e08b6-6b64-47ae-be43-9be1c987032f",
+      "deviceId" : "demo-paloalto-01",
+      "findingId" : "f8eef718-39ce-44fb-a9cd-42db138a3385",
+      "score" : 67,
+      "level" : "HIGH",
+      "factors" : {
+        "severity" : 8.0,
+        "assetCriticality" : 5.0,
+        "exposure" : 5.0,
+        "exploitability" : 8.0,
+        "confidence" : 7.0,
+        "rawInputs" : {
+          "severity" : "HIGH",
+          "assetCriticality" : "MEDIUM",
+          "networkExposure" : "INTERNAL",
+          "exploitability" : "HIGH",
+          "confidence" : 0.7
+        },
+        "contributions" : {
+          "severity" : 28.0,
+          "assetCriticality" : 10.0,
+          "exposure" : 10.0,
+          "exploitability" : 12.0,
+          "confidence" : 7.0
+        },
+        "controlWeight" : 8.0
+      },
+      "calculationVersion" : "1.0",
+      "assetCriticalitySource" : "DEFAULT_PLACEHOLDER",
+      "networkExposureSource" : "DEFAULT_PLACEHOLDER",
+      "confidence" : 0.7,
+      "confidenceSource" : "VENDOR_DETECTION",
+      "calculatedAt" : 1791357104.513000000,
+      "createdAt" : 1791357104.513000000,
+      "updatedAt" : 1791357104.513000000
+    }, {
+      "id" : "5d4c9829-d00d-4add-a016-ab198099a096",
+      "auditId" : "9d0e08b6-6b64-47ae-be43-9be1c987032f",
+      "deviceId" : "demo-paloalto-01",
+      "findingId" : "e3622aa6-aa00-4023-8952-9e01ecee027d",
+      "score" : 67,
+      "level" : "HIGH",
+      "factors" : {
+        "severity" : 8.0,
+        "assetCriticality" : 5.0,
+        "exposure" : 5.0,
+        "exploitability" : 8.0,
+        "confidence" : 7.0,
+        "rawInputs" : {
+          "severity" : "HIGH",
+          "assetCriticality" : "MEDIUM",
+          "networkExposure" : "INTERNAL",
+          "exploitability" : "HIGH",
+          "confidence" : 0.7
+        },
+        "contributions" : {
+          "severity" : 28.0,
+          "assetCriticality" : 10.0,
+          "exposure" : 10.0,
+          "exploitability" : 12.0,
+          "confidence" : 7.0
+        },
+        "controlWeight" : 8.0
+      },
+      "calculationVersion" : "1.0",
+      "assetCriticalitySource" : "DEFAULT_PLACEHOLDER",
+      "networkExposureSource" : "DEFAULT_PLACEHOLDER",
+      "confidence" : 0.7,
+      "confidenceSource" : "VENDOR_DETECTION",
+      "calculatedAt" : 1791357104.515000000,
+      "createdAt" : 1791357104.515000000,
+      "updatedAt" : 1791357104.515000000
+    } ]
+  } ]
+}

@@ -1,0 +1,37 @@
+{
+  "id" : "0632409f-503a-405b-b9f2-6207252c5db7",
+  "deviceId" : "demo-cisco-01",
+  "fromVersionId" : "v1.0",
+  "toVersionId" : "v2.0",
+  "fromVersion" : 1,
+  "toVersion" : 2,
+  "changes" : [ {
+    "canonicalField" : "security.ssh.enabled",
+    "after" : true,
+    "changeType" : "ADDED",
+    "sourceAfter" : "ip ssh version 2",
+    "classification" : "UNKNOWN_IMPACT"
+  }, {
+    "canonicalField" : "security.ssh.version",
+    "after" : 2,
+    "changeType" : "ADDED",
+    "sourceAfter" : "ip ssh version 2",
+    "classification" : "NO_SECURITY_IMPACT"
+  }, {
+    "canonicalField" : "security.telnet.enabled",
+    "before" : true,
+    "after" : false,
+    "changeType" : "MODIFIED",
+    "sourceBefore" : " transport input telnet ssh",
+    "sourceAfter" : " transport input ssh",
+    "classification" : "IMPROVED"
+  } ],
+  "affectedControlIds" : [ "54676d0f-c4b9-450a-ad6f-ad7be38ab135", "f1b49c3f-b08f-47de-8f29-a89d85798fe2", "88a480fb-b64c-4b7d-97fc-6f61bff18bd3", "b73480a4-946c-4a64-8012-5f52c51c7c72", "4c7279c6-05d0-482e-98f7-b8f585f359a2", "6c5bb765-f9ff-4424-bf02-2ec68fa799da" ],
+  "affectedFindingIds" : [ "42384333-5ac8-4b23-a738-4fa3e9003353", "7d9df767-e5b0-47a7-87ff-91101b3dce71", "9bb187a5-4f77-499e-948b-d258cb50d021" ],
+  "riskBefore" : 70,
+  "riskAfter" : 0,
+  "impact" : "DECREASED",
+  "detectedAt" : 1791357104.732481800,
+  "createdAt" : 1791357104.732481800,
+  "updatedAt" : 1791357104.732481800
+}
