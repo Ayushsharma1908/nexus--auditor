@@ -931,8 +931,8 @@ Stores human-validated mappings for previously unknown configuration syntax.
 
 AI suggests; human validates; the mapping becomes reusable.
 
-> **Architectural Note (LLM Integration):**
-> This collection interfaces with a live LLM provider (Google Gemini `gemini-1.5-flash` or `gemini-2.5-flash`) via the `SuggestionProvider` interface. The schema fields (`confidence`, `reason`, `status`, `suggestedBy`) remain completely unchanged, as the integration relies on the exact existing JSON contract. Gemini generates candidate suggestions with `suggestedBy: "AI"`, but mappings are strictly saved in `status: "PENDING_REVIEW"` and require explicit human approval (`review.reviewerId`) before reuse.
+> **Architectural Note (LLM Integration with 10-Second Fallback):**
+> Suggestions are powered by Google Gemini (`gemini-2.5-flash`) via `GeminiSuggestionProvider`. The provider enforces a strict 10-second client timeout window: if the Gemini API call fails, errors, or exceeds 10 seconds, the system seamlessly falls back to `DeterministicStubSuggestionProvider`. All generated suggestions remain strictly `PENDING_REVIEW` until approved through explicit human review (`review.reviewerId`). The schema fields (`confidence`, `reason`, `status`, `suggestedBy`) remain completely unchanged, preserving the exact JSON contract.
 
 ## Schema
 
@@ -998,8 +998,8 @@ status
 
 Tracks asynchronous AI analysis operations.
 
-> **Architectural Note (LLM Integration):**
-> This collection tracks analysis operations executed against the live LLM provider (Google Gemini `gemini-1.5-flash` or `gemini-2.5-flash`) via the `SuggestionProvider` interface. The schema fields (`type`, `status`, `input`, `result`, `error`) remain completely unchanged, tracking operational execution, suggestion counts, and error/timeout status under the exact existing contract.
+> **Architectural Note (LLM Integration with 10-Second Fallback):**
+> Tracks analysis operations executed against Google Gemini (`gemini-2.5-flash`) via `GeminiSuggestionProvider` or its automatic 10-second fallback delegate `DeterministicStubSuggestionProvider`. The schema fields (`type`, `status`, `input`, `result`, `error`) remain completely unchanged, capturing operation status, suggestion counts, latency, and fallback execution under the exact existing contract.
 
 ## Schema
 
