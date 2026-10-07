@@ -29,10 +29,10 @@
     "ISO" : 1
   },
   "topRiskAssessments" : [ {
-    "id" : "7d6cf6e2-8144-4954-b1a3-08031f3a1a58",
-    "auditId" : "f5289527-760c-4546-97ae-247b1b8d8e21",
+    "id" : "c862c83d-81ee-4320-b95c-2d6ef4a7be93",
+    "auditId" : "1b00ba6e-5faf-4941-a174-2fefe74ccd1f",
     "deviceId" : "demo-cisco-01",
-    "findingId" : "42384333-5ac8-4b23-a738-4fa3e9003353",
+    "findingId" : "dafa9660-38d2-4035-8140-00e6ddac4ad3",
     "score" : 68,
     "level" : "HIGH",
     "factors" : {
@@ -62,14 +62,14 @@
     "networkExposureSource" : "DEFAULT_PLACEHOLDER",
     "confidence" : 0.8,
     "confidenceSource" : "VENDOR_DETECTION",
-    "calculatedAt" : 1791357104.362000000,
-    "createdAt" : 1791357104.362000000,
-    "updatedAt" : 1791357104.362000000
+    "calculatedAt" : 1791357316.091000000,
+    "createdAt" : 1791357316.091000000,
+    "updatedAt" : 1791357316.091000000
   }, {
-    "id" : "012078eb-2082-441b-b952-dadd43b4c722",
-    "auditId" : "f5289527-760c-4546-97ae-247b1b8d8e21",
+    "id" : "6ac0c3e3-f9f8-42cd-b0f2-f0642b108a15",
+    "auditId" : "1b00ba6e-5faf-4941-a174-2fefe74ccd1f",
     "deviceId" : "demo-cisco-01",
-    "findingId" : "7d9df767-e5b0-47a7-87ff-91101b3dce71",
+    "findingId" : "cc09bf88-2c6f-430f-86c0-a06cde7ca77a",
     "score" : 68,
     "level" : "HIGH",
     "factors" : {
@@ -99,14 +99,14 @@
     "networkExposureSource" : "DEFAULT_PLACEHOLDER",
     "confidence" : 0.8,
     "confidenceSource" : "VENDOR_DETECTION",
-    "calculatedAt" : 1791357104.366000000,
-    "createdAt" : 1791357104.366000000,
-    "updatedAt" : 1791357104.366000000
+    "calculatedAt" : 1791357316.096000000,
+    "createdAt" : 1791357316.096000000,
+    "updatedAt" : 1791357316.096000000
   }, {
-    "id" : "6a5acb3b-a6ac-4e36-b733-3ec141a6ddb9",
-    "auditId" : "f5289527-760c-4546-97ae-247b1b8d8e21",
+    "id" : "bd4b3626-7055-4342-9cdd-ee636b01b8e3",
+    "auditId" : "1b00ba6e-5faf-4941-a174-2fefe74ccd1f",
     "deviceId" : "demo-cisco-01",
-    "findingId" : "9bb187a5-4f77-499e-948b-d258cb50d021",
+    "findingId" : "66eb4cec-a627-48b5-876c-b280a6714e28",
     "score" : 68,
     "level" : "HIGH",
     "factors" : {
@@ -136,8 +136,8 @@
     "networkExposureSource" : "DEFAULT_PLACEHOLDER",
     "confidence" : 0.8,
     "confidenceSource" : "VENDOR_DETECTION",
-    "calculatedAt" : 1791357104.368000000,
-    "createdAt" : 1791357104.368000000,
-    "updatedAt" : 1791357104.368000000
+    "calculatedAt" : 1791357316.097000000,
+    "createdAt" : 1791357316.097000000,
+    "updatedAt" : 1791357316.097000000
   } ]
 }

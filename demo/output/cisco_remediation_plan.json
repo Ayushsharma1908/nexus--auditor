@@ -1,8 +1,8 @@
 {
-  "id" : "dbbe09f7-2220-4ef9-81cc-c3fddcf1590a",
-  "findingId" : "42384333-5ac8-4b23-a738-4fa3e9003353",
+  "id" : "df6f7852-df68-41ee-b609-6558781c12e1",
+  "findingId" : "dafa9660-38d2-4035-8140-00e6ddac4ad3",
   "deviceId" : "demo-cisco-01",
-  "templateId" : "4213178f-ea60-4e79-b4dd-48aaf60bf10b",
+  "templateId" : "db83647a-d987-4693-829a-d4da42bcd21b",
   "status" : "PLANNED",
   "steps" : [ {
     "order" : 1,
@@ -24,6 +24,6 @@
     "messages" : [ ]
   },
   "createdBy" : "SYSTEM_REMEDIATION_ENGINE",
-  "createdAt" : 1791357104.638342800,
-  "updatedAt" : 1791357104.638342800
+  "createdAt" : 1791357316.362633400,
+  "updatedAt" : 1791357316.362633400
 }

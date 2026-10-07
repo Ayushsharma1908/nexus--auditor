@@ -1,5 +1,5 @@
 {
-  "id" : "0632409f-503a-405b-b9f2-6207252c5db7",
+  "id" : "b31c17ae-49b4-4eda-9989-e933ccb200b6",
   "deviceId" : "demo-cisco-01",
   "fromVersionId" : "v1.0",
   "toVersionId" : "v2.0",
@@ -26,12 +26,12 @@
     "sourceAfter" : " transport input ssh",
     "classification" : "IMPROVED"
   } ],
-  "affectedControlIds" : [ "54676d0f-c4b9-450a-ad6f-ad7be38ab135", "f1b49c3f-b08f-47de-8f29-a89d85798fe2", "88a480fb-b64c-4b7d-97fc-6f61bff18bd3", "b73480a4-946c-4a64-8012-5f52c51c7c72", "4c7279c6-05d0-482e-98f7-b8f585f359a2", "6c5bb765-f9ff-4424-bf02-2ec68fa799da" ],
-  "affectedFindingIds" : [ "42384333-5ac8-4b23-a738-4fa3e9003353", "7d9df767-e5b0-47a7-87ff-91101b3dce71", "9bb187a5-4f77-499e-948b-d258cb50d021" ],
+  "affectedControlIds" : [ "4c09ff8a-fe29-4c37-ad8f-f3c8c652553c", "958fea34-7ac7-42f2-8d93-1b2b1af9a612", "3ed6c41c-21e0-42dc-9831-cd8b14156967", "5c461a8e-cd04-4398-9fa3-6dba195319b7", "df12a712-2b73-4533-a6b4-fe3cfa7af307", "941ba55a-1cc0-4e12-828a-c30f9237b016" ],
+  "affectedFindingIds" : [ "dafa9660-38d2-4035-8140-00e6ddac4ad3", "cc09bf88-2c6f-430f-86c0-a06cde7ca77a", "66eb4cec-a627-48b5-876c-b280a6714e28" ],
   "riskBefore" : 70,
   "riskAfter" : 0,
   "impact" : "DECREASED",
-  "detectedAt" : 1791357104.732481800,
-  "createdAt" : 1791357104.732481800,
-  "updatedAt" : 1791357104.732481800
+  "detectedAt" : 1791357316.439849400,
+  "createdAt" : 1791357316.439849400,
+  "updatedAt" : 1791357316.439849400
 }

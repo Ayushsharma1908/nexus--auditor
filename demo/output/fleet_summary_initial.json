@@ -51,10 +51,10 @@
       "ISO" : 1
     },
     "topRiskAssessments" : [ {
-      "id" : "7d6cf6e2-8144-4954-b1a3-08031f3a1a58",
-      "auditId" : "f5289527-760c-4546-97ae-247b1b8d8e21",
+      "id" : "c862c83d-81ee-4320-b95c-2d6ef4a7be93",
+      "auditId" : "1b00ba6e-5faf-4941-a174-2fefe74ccd1f",
       "deviceId" : "demo-cisco-01",
-      "findingId" : "42384333-5ac8-4b23-a738-4fa3e9003353",
+      "findingId" : "dafa9660-38d2-4035-8140-00e6ddac4ad3",
       "score" : 68,
       "level" : "HIGH",
       "factors" : {
@@ -84,14 +84,14 @@
       "networkExposureSource" : "DEFAULT_PLACEHOLDER",
       "confidence" : 0.8,
       "confidenceSource" : "VENDOR_DETECTION",
-      "calculatedAt" : 1791357104.362000000,
-      "createdAt" : 1791357104.362000000,
-      "updatedAt" : 1791357104.362000000
+      "calculatedAt" : 1791357316.091000000,
+      "createdAt" : 1791357316.091000000,
+      "updatedAt" : 1791357316.091000000
     }, {
-      "id" : "012078eb-2082-441b-b952-dadd43b4c722",
-      "auditId" : "f5289527-760c-4546-97ae-247b1b8d8e21",
+      "id" : "6ac0c3e3-f9f8-42cd-b0f2-f0642b108a15",
+      "auditId" : "1b00ba6e-5faf-4941-a174-2fefe74ccd1f",
       "deviceId" : "demo-cisco-01",
-      "findingId" : "7d9df767-e5b0-47a7-87ff-91101b3dce71",
+      "findingId" : "cc09bf88-2c6f-430f-86c0-a06cde7ca77a",
       "score" : 68,
       "level" : "HIGH",
       "factors" : {
@@ -121,14 +121,14 @@
       "networkExposureSource" : "DEFAULT_PLACEHOLDER",
       "confidence" : 0.8,
       "confidenceSource" : "VENDOR_DETECTION",
-      "calculatedAt" : 1791357104.366000000,
-      "createdAt" : 1791357104.366000000,
-      "updatedAt" : 1791357104.366000000
+      "calculatedAt" : 1791357316.096000000,
+      "createdAt" : 1791357316.096000000,
+      "updatedAt" : 1791357316.096000000
     }, {
-      "id" : "6a5acb3b-a6ac-4e36-b733-3ec141a6ddb9",
-      "auditId" : "f5289527-760c-4546-97ae-247b1b8d8e21",
+      "id" : "bd4b3626-7055-4342-9cdd-ee636b01b8e3",
+      "auditId" : "1b00ba6e-5faf-4941-a174-2fefe74ccd1f",
       "deviceId" : "demo-cisco-01",
-      "findingId" : "9bb187a5-4f77-499e-948b-d258cb50d021",
+      "findingId" : "66eb4cec-a627-48b5-876c-b280a6714e28",
       "score" : 68,
       "level" : "HIGH",
       "factors" : {
@@ -158,9 +158,9 @@
       "networkExposureSource" : "DEFAULT_PLACEHOLDER",
       "confidence" : 0.8,
       "confidenceSource" : "VENDOR_DETECTION",
-      "calculatedAt" : 1791357104.368000000,
-      "createdAt" : 1791357104.368000000,
-      "updatedAt" : 1791357104.368000000
+      "calculatedAt" : 1791357316.097000000,
+      "createdAt" : 1791357316.097000000,
+      "updatedAt" : 1791357316.097000000
     } ]
   }, {
     "deviceId" : "demo-juniper-01",
@@ -192,10 +192,10 @@
       "ISO" : 1
     },
     "topRiskAssessments" : [ {
-      "id" : "c0a61c9f-d82f-431f-a7db-6a2c75a6b3cb",
-      "auditId" : "74d87d15-10b1-432c-8b9f-37affa5fb0d7",
+      "id" : "4164436b-84bc-4db0-855f-3bb6d81f6737",
+      "auditId" : "938d573e-5c91-4c6b-9f23-3be50b21407d",
       "deviceId" : "demo-juniper-01",
-      "findingId" : "8454e05b-3cd5-40b5-b665-649b3a0a18ab",
+      "findingId" : "452f3959-c9ea-42ae-8ed6-3506b6a952ee",
       "score" : 67,
       "level" : "HIGH",
       "factors" : {
@@ -225,14 +225,14 @@
       "networkExposureSource" : "DEFAULT_PLACEHOLDER",
       "confidence" : 0.7,
       "confidenceSource" : "VENDOR_DETECTION",
-      "calculatedAt" : 1791357104.422000000,
-      "createdAt" : 1791357104.422000000,
-      "updatedAt" : 1791357104.422000000
+      "calculatedAt" : 1791357316.150000000,
+      "createdAt" : 1791357316.150000000,
+      "updatedAt" : 1791357316.150000000
     }, {
-      "id" : "4877ea6e-d028-458d-bc06-110220bb9360",
-      "auditId" : "74d87d15-10b1-432c-8b9f-37affa5fb0d7",
+      "id" : "563536e0-7dd1-4cec-ac15-ca8cc9ed83f6",
+      "auditId" : "938d573e-5c91-4c6b-9f23-3be50b21407d",
       "deviceId" : "demo-juniper-01",
-      "findingId" : "3e72f6b8-6729-42b6-ba3c-211300e4f3f3",
+      "findingId" : "02f92960-5397-4eab-a98c-600a7963e013",
       "score" : 67,
       "level" : "HIGH",
       "factors" : {
@@ -262,9 +262,9 @@
       "networkExposureSource" : "DEFAULT_PLACEHOLDER",
       "confidence" : 0.7,
       "confidenceSource" : "VENDOR_DETECTION",
-      "calculatedAt" : 1791357104.423000000,
-      "createdAt" : 1791357104.423000000,
-      "updatedAt" : 1791357104.423000000
+      "calculatedAt" : 1791357316.151000000,
+      "createdAt" : 1791357316.151000000,
+      "updatedAt" : 1791357316.151000000
     } ]
   }, {
     "deviceId" : "demo-fortinet-01",
@@ -296,10 +296,10 @@
       "ISO" : 1
     },
     "topRiskAssessments" : [ {
-      "id" : "05a73a94-86f7-42ad-a2ea-2ffad341c1af",
-      "auditId" : "22b495ca-75c8-4403-8f6f-593b7f32ba47",
+      "id" : "c1a44b13-97a9-4a88-bf42-40e97265acf7",
+      "auditId" : "f3e9c206-2524-4017-a4b8-4321b7457496",
       "deviceId" : "demo-fortinet-01",
-      "findingId" : "6a9f1925-fd86-4b1e-9559-f4ce24e7f124",
+      "findingId" : "4c51092c-47c3-4fdc-a8a7-c2668b253eff",
       "score" : 67,
       "level" : "HIGH",
       "factors" : {
@@ -329,14 +329,14 @@
       "networkExposureSource" : "DEFAULT_PLACEHOLDER",
       "confidence" : 0.7,
       "confidenceSource" : "VENDOR_DETECTION",
-      "calculatedAt" : 1791357104.465000000,
-      "createdAt" : 1791357104.465000000,
-      "updatedAt" : 1791357104.465000000
+      "calculatedAt" : 1791357316.194000000,
+      "createdAt" : 1791357316.194000000,
+      "updatedAt" : 1791357316.194000000
     }, {
-      "id" : "3570a636-5b88-4667-af82-834c37aea545",
-      "auditId" : "22b495ca-75c8-4403-8f6f-593b7f32ba47",
+      "id" : "34993982-efb5-453b-bc15-948976703a52",
+      "auditId" : "f3e9c206-2524-4017-a4b8-4321b7457496",
       "deviceId" : "demo-fortinet-01",
-      "findingId" : "bf1df269-80fe-4a4e-ad8e-e2d9a3d1bb12",
+      "findingId" : "18b9165a-e131-4262-83d0-91612ccaeea0",
       "score" : 67,
       "level" : "HIGH",
       "factors" : {
@@ -366,9 +366,9 @@
       "networkExposureSource" : "DEFAULT_PLACEHOLDER",
       "confidence" : 0.7,
       "confidenceSource" : "VENDOR_DETECTION",
-      "calculatedAt" : 1791357104.466000000,
-      "createdAt" : 1791357104.466000000,
-      "updatedAt" : 1791357104.466000000
+      "calculatedAt" : 1791357316.195000000,
+      "createdAt" : 1791357316.195000000,
+      "updatedAt" : 1791357316.195000000
     } ]
   }, {
     "deviceId" : "demo-paloalto-01",
@@ -400,10 +400,10 @@
       "ISO" : 1
     },
     "topRiskAssessments" : [ {
-      "id" : "b2a9c76a-d28b-4cec-8d9f-349331ca7588",
-      "auditId" : "9d0e08b6-6b64-47ae-be43-9be1c987032f",
+      "id" : "4275d3a7-fcba-49e6-b680-e6b944ce9af9",
+      "auditId" : "18d74c78-e65e-42f1-a75f-af6965a73b50",
       "deviceId" : "demo-paloalto-01",
-      "findingId" : "f8eef718-39ce-44fb-a9cd-42db138a3385",
+      "findingId" : "fdb09616-9129-4121-8a92-8bd962bd60ca",
       "score" : 67,
       "level" : "HIGH",
       "factors" : {
@@ -433,14 +433,14 @@
       "networkExposureSource" : "DEFAULT_PLACEHOLDER",
       "confidence" : 0.7,
       "confidenceSource" : "VENDOR_DETECTION",
-      "calculatedAt" : 1791357104.513000000,
-      "createdAt" : 1791357104.513000000,
-      "updatedAt" : 1791357104.513000000
+      "calculatedAt" : 1791357316.240000000,
+      "createdAt" : 1791357316.240000000,
+      "updatedAt" : 1791357316.240000000
     }, {
-      "id" : "5d4c9829-d00d-4add-a016-ab198099a096",
-      "auditId" : "9d0e08b6-6b64-47ae-be43-9be1c987032f",
+      "id" : "53e9b271-43e6-4cba-a184-79d47a2dceb8",
+      "auditId" : "18d74c78-e65e-42f1-a75f-af6965a73b50",
       "deviceId" : "demo-paloalto-01",
-      "findingId" : "e3622aa6-aa00-4023-8952-9e01ecee027d",
+      "findingId" : "cb9bc1ef-576b-447c-9a42-37439360d421",
       "score" : 67,
       "level" : "HIGH",
       "factors" : {
@@ -470,9 +470,9 @@
       "networkExposureSource" : "DEFAULT_PLACEHOLDER",
       "confidence" : 0.7,
       "confidenceSource" : "VENDOR_DETECTION",
-      "calculatedAt" : 1791357104.515000000,
-      "createdAt" : 1791357104.515000000,
-      "updatedAt" : 1791357104.515000000
+      "calculatedAt" : 1791357316.241000000,
+      "createdAt" : 1791357316.241000000,
+      "updatedAt" : 1791357316.241000000
     } ]
   } ]
 }
