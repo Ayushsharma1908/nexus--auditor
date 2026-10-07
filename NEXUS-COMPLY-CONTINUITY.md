@@ -8,7 +8,7 @@
 
 This file has two jobs:
 
-1. **Tells you what already exists and what's locked in** (Sections 1–3) — read these before writing any code, so you don't duplicate, contradict, or silently rewrite a decision that was already made and verified.
+1. **Tells you what already exists and what's locked in** (Sections 1–3) — read these before writing any code, so you don't duplicate, contradict, or silently rewrite a decision that was already made and settled.
 2. **Is a live progress log you must keep updated yourself** (Section 4) — not the person, not Claude. You update it.
 
 ### When to update Section 4
@@ -39,7 +39,7 @@ When the person later pastes this file into a fresh Claude chat, Claude will tre
 - **Scope of this workspace:** the **Cyber Layer** only (vendor detection, parsing, canonical modeling, compliance rules, findings, evidence, audit orchestration, and beyond). A separate non-Cyber API layer (pi1/pi2 work packages, 92 REST endpoints) already exists elsewhere and should NOT be rebuilt here — the Cyber Layer feeds into it through stable service interfaces only.
 - **Stack:** Spring Boot, Spring Data MongoDB, Java 21, Maven.
 - **Environment:** `D:\auditor`. Git initialized locally at commit `baseline-post-2.9c`.
-- **Reference docs in the workspace:** `schema1.md` (the approved MongoDB schema — authoritative for every field name, always paste the literal relevant section before building a new collection), `cyberlayer.pdf` (the full Cyber Layer design spec).
+- **Reference docs:** `schema1.md` (present in workspace `D:\auditor\schema1.md`, authoritative MongoDB schema), `cyberlayer.pdf` (the full Cyber Layer design spec, accessed via uploaded brain artifact `media_1790191901618.pdf`; not present as a physical file `D:\auditor\cyberlayer.pdf` on disk, as documented in Section 6).
 
 ## SECTION 2 — The Review Process (for when a fresh Claude session resumes)
 
@@ -65,7 +65,7 @@ Every task goes through this cycle: Antigravity implements → reports back with
 4. **Build order** (per cyberlayer.pdf section 33): detection → canonical schema + parser interface → Cisco parser → normalized persistence → compliance rule engine abstraction → CIS rules → NIST/ISO rules → findings engine → evidence engine → audit orchestration → risk scoring → remaining 3 vendor parsers (Juniper/Fortinet/Palo Alto) → remediation templates → drift detection → AI unknown-syntax loop → what-if simulation → dashboard/reporting aggregation → full test pass.
 5. **Audit status state machine** (10 states, matches schema1.md): `QUEUED → DETECTING → PARSING → NORMALIZING → UNKNOWN_REVIEW → CHECKING → RISK_CALCULATION → COMPLETED`, plus terminal `FAILED` / `CANCELLED`.
 6. `RISK_CALCULATION` is fully wired into `AuditOrchestrationServiceImpl` via `RiskCalculationService` (which computes deterministic 5-factor risk assessments and persists `risk_assessments` documents to MongoDB for non-compliant findings). Only `UNKNOWN_REVIEW` remains a transient pass-through stage until its real engine (AI unknown-syntax approval loop) is built.
-7. **No CIS rule exists for HTTPS** (`security.https.enabled`) — verified against the real CIS Cisco IOS XE 17.x Benchmark v2.2.1 PDF, which has no "HTTPS enabled = PASS" rule.
+7. **No CIS rule exists for HTTPS** (`security.https.enabled`) — confirmed against the real CIS Cisco IOS XE 17.x Benchmark v2.2.1 PDF, which has no "HTTPS enabled = PASS" rule.
 8. **ISO/IEC 27001 rules** use only publicly-known Annex A control numbers with internally-written descriptions — never ISO's actual copyrighted text. Results map to "Technical evidence available/missing/partial/not assessable" labels via `FrameworkDocument.metadata.resultLabelMap`, not PASS/FAIL language.
 9. **DISA STIG is deferred** — only V-220139 (syslog) is confirmed from current numbering; SSH content is only confirmed from an older/superseded STIG version; AAA/SNMP/NTP V-IDs unconfirmed. Do not build STIG rules until this is resolved.
 10. `Finding.title` names the violation (e.g. `"Telnet enabled"`), not the rule's compliant-state name.
@@ -97,7 +97,7 @@ Every task goes through this cycle: Antigravity implements → reports back with
 
 ## SECTION 4 — LIVE PROGRESS LOG (Antigravity maintains this section — update continuously)
 
-### Baseline — verified complete by Claude as of the last full review (frozen historical record, do not re-verify unless something looks broken)
+### Baseline — marked complete by Claude as of the last full review (frozen historical record, do not re-verify unless something looks broken)
 
 | Package | Status |
 |---|---|
@@ -106,13 +106,13 @@ Every task goes through this cycle: Antigravity implements → reports back with
 | `com.nexuscomply.cyber.parser` + `.parser.cisco` | DONE — `VendorParser`, `ParserService`, `CiscoIosParser` (10 extraction rules) |
 | `com.nexuscomply.cyber.normalization` | DONE — MongoDB persistence, schema1.md section 5 |
 | `com.nexuscomply.cyber.compliance` | DONE — `GenericRuleEvaluator`, `RuleApplicabilityChecker` |
-| `com.nexuscomply.cyber.compliance.model` + `.persistence` | DONE — `Framework`/`Control`/`ComplianceRule`, verified field parity with schema1.md sections 6/7/8 |
+| `com.nexuscomply.cyber.compliance.model` + `.persistence` | DONE — `Framework`/`Control`/`ComplianceRule`, confirmed field parity with schema1.md sections 6/7/8 |
 | `com.nexuscomply.cyber.compliance.rules.{cis,nist,iso}` | DONE — 21 real rules (7 CIS, 7 NIST, 7 ISO) |
 | `com.nexuscomply.cyber.finding` | DONE — `FindingCreationService` |
 | `com.nexuscomply.cyber.evidence` | DONE — `Evidence`/`EvidenceDocument`, schema1.md section 11 |
-| `com.nexuscomply.cyber.audit` | DONE — full orchestration pipeline, 10-state machine, verified async/incremental persistence, verified cancellation |
+| `com.nexuscomply.cyber.audit` | DONE — full orchestration pipeline, 10-state machine, confirmed async/incremental persistence, confirmed cancellation |
 
-**Test suite baseline: 61 tests passing** as of the last full Claude-verified review.
+**Test suite baseline: 61 tests passing** as of the last full Claude review.
 
 ### ⬇️ ANTIGRAVITY: everything below this line is yours to maintain ⬇️
 
@@ -123,9 +123,9 @@ Every task goes through this cycle: Antigravity implements → reports back with
 - Task 2.7: Palo Alto PAN-OS Configuration Parser (`com.nexuscomply.cyber.parser.paloalto`) — implemented; pending Claude review
 - Task 2.8: Remediation Templates Engine (`com.nexuscomply.cyber.remediation`) — implemented; pending Claude review
 - Task 2.9 / 2.9b / 2.9c / 2.9d / 2.9e / 2.9f: Drift Detection Engine (`com.nexuscomply.cyber.drift`) — implemented; pending Claude review
-- Task 2.10a / 2.10b / 2.10c: AI Unknown-Syntax Resolution Loop (`com.nexuscomply.cyber.parser.ai`) — implemented; pending Claude review
+- Task 2.10a / 2.10b / 2.10c: AI Unknown-Syntax Resolution Loop (`com.nexuscomply.cyber.ai`) — implemented; pending Claude review
 - Task 2.11 / 2.11b: What-If Simulation Engine (`com.nexuscomply.cyber.simulation`) — implemented; pending Claude review
-- Task 2.12: Unified Dashboard & Reporting Aggregation (`com.nexuscomply.cyber.report`) — implemented; pending Claude review
+- Task 2.12 / 2.12c: Unified Dashboard & Reporting Aggregation (`com.nexuscomply.cyber.report`) — implemented; pending Claude review
 
 **Sub-step status:**
 | Sub-step | Status | Evidence / notes |
@@ -174,10 +174,10 @@ Every task goes through this cycle: Antigravity implements → reports back with
 | Impact Calculation Logic | DONE | Precedence: (1) zero changes -> NO_CHANGE; (2) any change is UNKNOWN_IMPACT -> UNKNOWN (regardless of risk direction); (3) otherwise risk up -> INCREASED, risk down -> DECREASED; (4) equal risk -> MIXED (both improved & degraded) / INCREASED (degraded only) / DECREASED (improved only) / NO_CHANGE. |
 | Cosmetic Noise Filtering | DONE | Absolute Rule 2: Changes to `unknowns` alone produce zero drift changes (`changes.isEmpty()`), 0 risk delta, and `impact = "NO_CHANGE"`. |
 | Read-Only Integrity | DONE | Absolute Rule 6: Neither input `NormalizedConfigurationDocument` is mutated during drift detection. |
-| Drift Integration Tests (`DriftDetectionIntegrationTest`) | DONE | 20 integration tests in `DriftDetectionIntegrationTest.java` verifying raw schema parity, noise filtering, Cisco telnet improvement, posture degradation, unknown impact handling, read-only integrity, cross-device rejection, null->true (DEGRADED, risk 0->70, INCREASED), true->null (UNKNOWN_IMPACT, risk 70->0, UNKNOWN), telnet IMPROVED + field with no rule (risk 70->0, UNKNOWN), ssh 2 vs "2", mixed event with equal risk (MIXED), source-map-only difference, identical versionId/docId rejection, missing document ID, Cisco rules on Juniper device (now rule-covered: DEGRADED, risk 0->70, INCREASED), multi-framework CIS+NIST+ISO max risk (70 not 210), affectedFindingIds filtered to before document, risk_assessments count unmutated, and clamped risk 100->100 with further degrade (INCREASED). 100% pass. |
+| Drift Integration Tests (`DriftDetectionIntegrationTest`) | DONE | 20 integration tests in `DriftDetectionIntegrationTest.java` testing raw schema parity, noise filtering, Cisco telnet improvement, posture degradation, unknown impact handling, read-only integrity, cross-device rejection, null->true (DEGRADED, risk 0->70, INCREASED), true->null (UNKNOWN_IMPACT, risk 70->0, UNKNOWN), telnet IMPROVED + field with no rule (risk 70->0, UNKNOWN), ssh 2 vs "2", mixed event with equal risk (MIXED), source-map-only difference, identical versionId/docId rejection, missing document ID, Cisco rules on Juniper device (now rule-covered: DEGRADED, risk 0->70, INCREASED), multi-framework CIS+NIST+ISO max risk (70 not 210), affectedFindingIds filtered to before document, risk_assessments count unmutated, and clamped risk 100->100 with further degrade (INCREASED). 100% pass. |
 | **Task 2.10a — Narrow Four-Vendor Rule Coverage** | AWAITING REVIEW | Implemented; pending Claude review |
 | Scope-Restricted Multi-Vendor Rules | DONE | Extended NIST-AC-17, NIST-SC-8, ISO-A.13.1.1-TELNET, ISO-A.10.1.1 across Cisco, Juniper, Fortinet, and Palo Alto. Zero rules added for other fields. CIS rules retained strictly Cisco-only. `applicableOsVersions` set empty (`[]`) for multi-vendor rules. |
-| Four-Vendor Pipeline Tests | DONE | Deliberate-violation tests (telnet enabled -> FAIL on NIST + ISO with Evidence) and compliant tests executed across all 4 vendors. Fortinet and PAN-OS ssh.version verified UNKNOWN by design. Reconciliation identity `passed + failed + unknown + notApplicable + error == totalControls (21)` confirmed across all vendors. |
+| Four-Vendor Pipeline Tests | DONE | Deliberate-violation tests (telnet enabled -> FAIL on NIST + ISO with Evidence) and compliant tests executed across all 4 vendors. Fortinet and PAN-OS ssh.version confirmed UNKNOWN by design. Reconciliation identity `passed + failed + unknown + notApplicable + error == totalControls (21)` confirmed across all vendors. |
 | Cross-Vendor Remediation Plans | DONE | Demonstrated persisted plans: Juniper telnet (`delete system services telnet`), Fortinet telnet (`unselect allowaccess telnet`), Palo Alto telnet (`set deviceconfig system service disable-telnet yes`), and Fortinet SSH version platform gap (`PLATFORM_GAP_NOTICE`, `NO_COMMAND`). |
 | **Task 2.10b — AI Unknown-Syntax Resolution Loop** | AWAITING REVIEW | implemented; pending Claude review |
 | Schema Parity (`ai_mappings`, `ai_jobs`) | DONE | Implemented `AiMappingDocument`, `AiReview`, `AiJobDocument`, `AiMappingRepository`, and `AiJobRepository` matching schema1.md Sections 17 & 18 exactly. |
@@ -189,19 +189,19 @@ Every task goes through this cycle: Antigravity implements → reports back with
 | Revert non-Cisco return true in DefaultRuleApplicabilityChecker | DONE | Restored strict OS version check across all vendors in `DefaultRuleApplicabilityChecker.java`. |
 | Coverage & Evaluated metrics on AuditSummary | DONE | Added `evaluated` and `coverage` (= (passed+failed+unknown+error)/totalControls) without changing reconciliation identity. Tested on unversioned Cisco config. |
 | Read-Only Parser & Orchestration Usage Tracking | DONE | `ParserServiceImpl` performs zero DB writes; accepts `readOnly` flag. `usageCount` moved to `AuditOrchestrationServiceImpl`, incremented once per completed audit for unique applied mappings. |
-| Fail-Safe Exception Isolation | DONE | Verified audit completes with `status = "COMPLETED"` when `ai_mappings` read throws in parser, and when `ai_mappings` write throws in pending capture. |
+| Fail-Safe Exception Isolation | DONE | Confirmed audit completes with `status = "COMPLETED"` when `ai_mappings` read throws in parser, and when `ai_mappings` write throws in pending capture. |
 | Edge-Case Workflows | DONE | Tested: duplicate unknown -> exactly 1 pending doc; reject then re-audit -> no new pending doc & line remains UNKNOWN; approve with no suggestion refused; approve after reject refused; double approve refused. |
 | **Task 2.11 — What-If Simulation Engine** | AWAITING REVIEW | implemented; pending Claude review |
 | Pure In-Memory Simulation Pipeline | implemented; pending Claude review | `WhatIfSimulationServiceImpl` reuses `ParserService` (read-only mode), `GenericRuleEvaluator`, and `RiskCalculationService` over deep-cloned canonical model. Zero mutations to operational audit collections (`audits`, `findings`, `evidence`, `risk_assessments`, `normalized_configurations`, `drift_events`, `ai_mappings`). |
 | Deterministic Impact & Deltas | implemented; pending Claude review | Computes before/after compliance score, risk score (per-field max rule, clamped 0-100), failed controls, rule result status maps, finding delta, risk delta, and drift impact precedence (`INCREASED`, `DECREASED`, `MIXED`, `UNKNOWN`, `NO_CHANGE`). |
 | Schema Parity (`what_if_simulations`) | implemented; pending Claude review | Optional persistence adheres to `schema1.md` Section 14 `what_if_simulations` (`_id`, `deviceId`, `baseConfigurationVersionId`, `name`, `description`, `changes`, `status`, `before`, `after`, `affectedControlIds`, `affectedFindingIds`, `createdBy`, `createdAt`, `updatedAt`). |
 | Simulation Integration Tests (`WhatIfSimulationIntegrationTest`) | implemented; pending Claude review | 7 integration tests in `WhatIfSimulationIntegrationTest.java`: collection counts unchanged before/after (and +1 on persist), fix removing telnet shows FAIL->PASS & risk decrease (70->0), change introducing telnet shows increase, unknown line in raw config stays UNKNOWN, deterministic repeated execution, safe refusal of unknown device/version, schema1.md Sec 14 persisted document. |
-| **Task 2.12 — Unified Dashboard & Reporting Aggregation** | AWAITING REVIEW | implemented; pending Claude review |
-| Per-Device Posture Aggregation | implemented; pending Claude review | `DashboardReportingServiceImpl#getDevicePosture(deviceId)` aggregates latest audit summary (`passed`, `failed`, `unknown`, `notApplicable`, `evaluated`, `coverage`, `complianceScore`), open findings grouped by severity and framework, top risk assessments. Computed on read with zero writes. |
-| Fleet Summary Aggregation | implemented; pending Claude review | `DashboardReportingServiceImpl#getFleetSummary()` aggregates total devices, active compliant/non-compliant devices, fleet-wide compliance score, and per-vendor statistics (Cisco, Juniper, Fortinet, Palo Alto). Computed on read with zero writes. |
-| Device Drift History Aggregation | implemented; pending Claude review | `DashboardReportingServiceImpl#getDeviceDriftHistory(deviceId)` queries drift events in chronological order with version transitions and impact classifications. Computed on read with zero writes. |
-| Single-Audit Report & Markdown Rendering | implemented; pending Claude review | `DashboardReportingServiceImpl#getAuditReport(auditId)` compiles findings with evidence traceability, remediation plans, and unrecognized syntax items under review into structured `AuditReportResponse` with GitHub-flavored Markdown. UNKNOWN evaluation status is explicitly highlighted and never presented as PASS. Computed on read with zero writes. |
-| Dashboard & Reporting Integration Tests (`DashboardReportingIntegrationTest`) | implemented; pending Claude review | 7 integration tests: empty database safety, safe refusal of unknown device/audit (`NoSuchElementException`), fleet totals equal sum of device totals, collection counts unchanged after every report call, four-vendor audit reports with telnet findings, double-run equality across all reporting endpoints, coverage and UNKNOWN visible in rendered Markdown and never credited as PASS. |
+| **Task 2.12 / 2.12c — Unified Dashboard & Reporting Aggregation** | AWAITING REVIEW | implemented; pending Claude review |
+| Per-Device Posture Aggregation | implemented; pending Claude review | `DashboardReportingServiceImpl#getDevicePosture(deviceId)` aggregates latest audit summary (`passed`, `failed`, `unknownCount`, `notApplicableCount`, `evaluated`, `coverage`, `complianceScore`), open findings scoped strictly to the device's latest audit (selected by `completedAt` descending, falling back to `startedAt`) grouped by severity and framework code/name (CIS, NIST, ISO), top risk assessments. Computed on read with zero writes. Coverage = `(passed + failed) / (totalControls - notApplicable) * 100.0`. |
+| Fleet Summary Aggregation | implemented; pending Claude review | `DashboardReportingServiceImpl#getFleetSummary()` derives the device list from the distinct set of `deviceId` values across the `audits` and `normalized_configurations` collections. Aggregates total devices, total audits, open findings from latest audits only, severity and framework groupings, and fleet-wide average compliance score across devices with non-null scores (excluding devices with null score). Computed on read with zero writes. |
+| Device Drift History Aggregation | implemented; pending Claude review | `DashboardReportingServiceImpl#getDeviceDriftHistory(deviceId)` queries drift events in chronological order with version transitions and impact classifications. Tested with seeded records and a real `DriftDetectionService` run. Computed on read with zero writes. |
+| Single-Audit Report & Markdown Rendering | implemented; pending Claude review | `DashboardReportingServiceImpl#getAuditReport(auditId)` compiles findings with evidence traceability, remediation plans with template confirmation status (`[CONFIRMED]` / `[UNCONFIRMED]`) per command step, and unrecognized syntax items under review into structured `AuditReportResponse` with GitHub-flavored Markdown. UNKNOWN evaluation status is explicitly highlighted ("UNKNOWN means the field was not observed in the configuration; it is not a pass and may indicate a gap") and never presented as PASS. Computed on read with zero writes. |
+| Dashboard & Reporting Integration Tests (`DashboardReportingIntegrationTest`) | implemented; pending Claude review | 14 integration tests (11 implemented in Task 2.12, 3 added in Task 2.12c): empty database safety, safe refusal of unknown device/audit (`NoSuchElementException`), fleet totals equal sum of device totals, collection counts unchanged after every report call, four-vendor audit reports with telnet findings, double-run equality across all reporting endpoints, coverage and UNKNOWN visible in rendered Markdown and never credited as PASS, latest audit findings isolation (audit1 telnet-on -> audit2 clean gives 0 open findings; both telnet-on gives 3, not 6), multi-audit aggregation without finding double-counting, severity and framework grouping with mixed severities across CIS and NIST, fleet summary with differing non-zero scores (28.6 and 85.7) and null score exclusion, plan and markdown template confirmation status (`[UNCONFIRMED]`), real `DriftDetectionService` run (`detectDriftByDocumentIds`). |
 
 ### Schema Deviations & Conventions (schema1.md Parity)
 1. **`remediation_templates` (schema1.md Sec 15):** Deliberately omitted `controlId` and `ruleId` from MongoDB documents because remediation templates are shared across multiple frameworks (CIS, NIST, ISO) that evaluate the same canonical security fact. Added `canonicalField`, `commandType` (`PLATFORM_GAP`, `DERIVABLE_REGEX`, `REPRESENTATIVE_EXAMPLE`), and `gapExplanation`.
@@ -210,12 +210,12 @@ Every task goes through this cycle: Antigravity implements → reports back with
 4. **`ai_mappings` (schema1.md Sec 17):** Strict 1:1 parity with schema1.md (`_id`, `vendor`, `platform`, `rawSyntax`, `canonicalField`, `mappedValue`, `unit`, `confidence`, `reason`, `status`, `suggestedBy`, `review`, `usageCount`, `createdAt`, `updatedAt`).
 5. **`ai_jobs` (schema1.md Sec 18):** Strict 1:1 parity with schema1.md (`_id`, `type`, `status`, `configurationId`, `versionId`, `input`, `result`, `error`, `startedAt`, `completedAt`, `createdBy`, `createdAt`, `updatedAt`).
 6. **`what_if_simulations` (schema1.md Sec 14):** Strict 1:1 parity with schema1.md (`_id`, `deviceId`, `baseConfigurationVersionId`, `name`, `description`, `changes`, `status`, `before`, `after`, `affectedControlIds`, `affectedFindingIds`, `createdBy`, `createdAt`, `updatedAt`).
-7. **`reports` (schema1.md Sec 19):** Schema defines `reports` collection for generated export files (PDF/JSON storage metadata). Dashboards, device postures, fleet summaries, and audit reports are computed-on-read from underlying domain collections (`audits`, `findings`, `evidence`, `remediation_plans`, `risk_assessments`, `drift_events`, `ai_mappings`) without persisting intermediate dashboard documents.
+7. **`reports` (schema1.md Sec 19):** Schema defines `reports` collection for generated export files (PDF/JSON storage metadata). Dashboards, device postures, fleet summaries, and audit reports are computed-on-read from underlying domain collections (`audits`, `findings`, `evidence`, `remediation_plans`, `risk_assessments`, `drift_events`, `ai_mappings`) without persisting intermediate dashboard documents. Device list for fleet summary is derived from distinct `deviceId` values across `audits` and `normalized_configurations` collections.
 
 **If interrupted, last known state (be specific — see instructions at top of file):**
-Tasks 2.4, 2.5, 2.6, 2.7, 2.8, 2.9 (2.9b-2.9f), 2.10a, 2.10b, 2.10c, 2.11/2.11b, and 2.12/2.12b are implemented; pending Claude review. All tests pass with 0 failures, 0 errors, 0 skipped. Total test count: 216 tests across 26 test suites.
+Tasks 2.4, 2.5, 2.6, 2.7, 2.8, 2.9 (2.9b-2.9f), 2.10a, 2.10b, 2.10c, 2.11/2.11b, and 2.12/2.12c are implemented; pending Claude review. All tests pass with 0 failures, 0 errors, 0 skipped. Total test count: 219 tests across 26 test suites (Task 2.12 surefire test count: 14 tests in `DashboardReportingIntegrationTest`, with 11 in initial 2.12 and 3 added in 2.12c).
 
-**Last updated:** 2026-10-07
+**Last updated:** 2026-10-07 07:40:00 IST
 
 ---
 

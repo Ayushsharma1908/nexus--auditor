@@ -27,6 +27,7 @@ public class AuditReportResponse {
     private AuditSummary summary;
     private Double coverage;
     private int unknownCount;
+    private int notApplicableCount;
     private Double complianceScore;
 
     private List<FindingReportEntry> findings = new ArrayList<>();
@@ -131,6 +132,14 @@ public class AuditReportResponse {
 
     public void setUnknownCount(int unknownCount) {
         this.unknownCount = unknownCount;
+    }
+
+    public int getNotApplicableCount() {
+        return notApplicableCount;
+    }
+
+    public void setNotApplicableCount(int notApplicableCount) {
+        this.notApplicableCount = notApplicableCount;
     }
 
     public Double getComplianceScore() {

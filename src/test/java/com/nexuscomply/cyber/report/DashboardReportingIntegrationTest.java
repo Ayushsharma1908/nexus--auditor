@@ -11,7 +11,9 @@ import com.nexuscomply.cyber.ai.service.DeterministicStubSuggestionProvider;
 import com.nexuscomply.cyber.audit.Audit;
 import com.nexuscomply.cyber.audit.AuditOrchestrationService;
 import com.nexuscomply.cyber.audit.AuditOrchestrationServiceImpl;
+import com.nexuscomply.cyber.audit.persistence.AuditDocument;
 import com.nexuscomply.cyber.audit.persistence.AuditRepository;
+import com.nexuscomply.cyber.remediation.persistence.RemediationPlanDocument;
 import com.nexuscomply.cyber.compliance.DefaultRuleApplicabilityChecker;
 import com.nexuscomply.cyber.compliance.GenericRuleEvaluator;
 import com.nexuscomply.cyber.compliance.RuleApplicabilityChecker;
@@ -26,11 +28,14 @@ import com.nexuscomply.cyber.detection.VendorDetectionService;
 import com.nexuscomply.cyber.drift.model.DriftChange;
 import com.nexuscomply.cyber.drift.persistence.DriftEventDocument;
 import com.nexuscomply.cyber.drift.persistence.DriftEventRepository;
+import com.nexuscomply.cyber.drift.service.DriftDetectionService;
+import com.nexuscomply.cyber.drift.service.DriftDetectionServiceImpl;
 import com.nexuscomply.cyber.evidence.EvidenceCreationService;
 import com.nexuscomply.cyber.evidence.EvidenceCreationServiceImpl;
 import com.nexuscomply.cyber.evidence.persistence.EvidenceRepository;
 import com.nexuscomply.cyber.finding.FindingCreationService;
 import com.nexuscomply.cyber.finding.FindingCreationServiceImpl;
+import com.nexuscomply.cyber.finding.persistence.FindingDocument;
 import com.nexuscomply.cyber.finding.persistence.FindingRepository;
 import com.nexuscomply.cyber.audit.AuditSummary;
 import com.nexuscomply.cyber.normalization.NormalizedConfigurationDocument;
@@ -112,6 +117,7 @@ class DashboardReportingIntegrationTest {
     private RemediationPlanService remediationPlanService;
     private AuditOrchestrationService auditOrchestrationService;
     private DashboardReportingService dashboardReportingService;
+    private DriftDetectionService driftDetectionService;
 
     private ObjectMapper objectMapper;
 
@@ -198,7 +204,17 @@ class DashboardReportingIntegrationTest {
                 riskRepository,
                 driftEventRepository,
                 remediationPlanRepository,
-                aiMappingRepository
+                aiMappingRepository,
+                frameworkRepository,
+                templateRepository
+        );
+
+        driftDetectionService = new DriftDetectionServiceImpl(
+                driftEventRepository,
+                normalizedConfigRepository,
+                ruleRepository,
+                findingRepository,
+                riskCalculationService
         );
 
         objectMapper = new ObjectMapper();
@@ -306,7 +322,7 @@ class DashboardReportingIntegrationTest {
     }
 
     @Test
-    @DisplayName("4. Collection counts strictly unchanged after every report call (read-only verification)")
+    @DisplayName("4. Collection counts strictly unchanged after every report call (read-only audit read safety)")
     void testCollectionCountsStrictlyUnchangedAfterEveryReportCall() {
         seedRulesAndTemplates();
 
@@ -453,8 +469,13 @@ class DashboardReportingIntegrationTest {
         driftEventRepository.save(driftDoc);
 
         DeviceDriftHistoryResponse driftHistory = dashboardReportingService.getDeviceDriftHistory("dev-c");
-        System.out.println("=== DEVICE DRIFT HISTORY (dev-c) ===");
+        System.out.println("=== DEVICE DRIFT HISTORY (dev-c) (SEEDED RECORD SAMPLE) ===");
         System.out.println(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(driftHistory));
+
+        System.out.println("=== CISCO POSTURE JSON ===");
+        System.out.println(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(pCisco));
+        System.out.println("=== JUNIPER POSTURE JSON ===");
+        System.out.println(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(pJunos));
 
         System.out.println("=== RAW CISCO AUDIT REPORT MARKDOWN ===");
         System.out.println(rCisco.getMarkdownReport());
@@ -511,11 +532,11 @@ class DashboardReportingIntegrationTest {
     }
 
     @Test
-    @DisplayName("7. Coverage and UNKNOWN visible in Markdown and never treated as PASS")
+    @DisplayName("7. Coverage formula and UNKNOWN note reworded in Markdown")
     void testCoverageAndUnknownVisibleInMarkdownAndNeverTreatedAsPass() {
         seedRulesAndTemplates();
 
-        // Juniper configuration with 2 passing rules and 19 UNKNOWN / notApplicable
+        // Juniper configuration with 2 passing rules, 2 UNKNOWN, and 17 notApplicable
         String junosConfig = String.join("\n",
                 "set system services ssh",
                 "set system services ssh protocol-version v2"
@@ -524,13 +545,17 @@ class DashboardReportingIntegrationTest {
 
         AuditReportResponse report = dashboardReportingService.getAuditReport(audit.getId());
         assertThat(report).isNotNull();
-        assertThat(report.getCoverage()).isNotNull();
+
+        // Formula: (passed + failed) / (totalControls - notApplicable) -> (2 + 0) / (21 - 17) = 2/4 = 0.50 (50.0%)
+        assertThat(report.getCoverage()).isEqualTo(0.50);
+        assertThat(report.getUnknownCount()).isEqualTo(2);
+        assertThat(report.getNotApplicableCount()).isEqualTo(17);
 
         String md = report.getMarkdownReport();
-        assertThat(md).contains("| **Control Coverage** |");
-        assertThat(md).contains("| **UNKNOWN Controls (Pending Review)** |");
-        assertThat(md).contains("Controls with UNKNOWN evaluation status");
-        assertThat(md).contains("**NEVER** treated as PASS");
+        assertThat(md).contains("| **Control Coverage** | 50.0% |");
+        assertThat(md).contains("| **UNKNOWN Controls (Pending Review)** | 2 |");
+        assertThat(md).contains("| **Not Applicable Controls** | 17 |");
+        assertThat(md).contains("UNKNOWN means the field was not observed in the configuration; it is not a pass and may indicate a gap.");
 
         // Assert that UNKNOWN count was not credited to passed count
         AuditSummary summary = report.getSummary();
@@ -541,11 +566,11 @@ class DashboardReportingIntegrationTest {
     }
 
     @Test
-    @DisplayName("8. Two audits for one device -> posture uses the latest audit")
+    @DisplayName("8. Two audits for one device -> posture uses the latest audit findings")
     void testTwoAuditsForOneDevicePostureUsesLatest() throws Exception {
         seedRulesAndTemplates();
 
-        // Audit 1: Config with Telnet enabled (3 failures, complianceScore = 0.0)
+        // Case 1: Audit 1 (telnet-on) -> Audit 2 (clean) gives openFindingsCount = 0
         String ciscoV1 = String.join("\n",
                 "version 17.6",
                 "hostname RTR-MULTI",
@@ -555,7 +580,6 @@ class DashboardReportingIntegrationTest {
         Audit audit1 = auditOrchestrationService.startAudit("dev-multi-audit", "cfg-multi", "v1.0", ciscoV1);
         assertThat(audit1.getComplianceScore()).isEqualTo(0.0);
 
-        // Audit 2: Config with Telnet disabled (0 failures, complianceScore = 100.0)
         String ciscoV2 = String.join("\n",
                 "version 17.6",
                 "hostname RTR-MULTI",
@@ -572,9 +596,28 @@ class DashboardReportingIntegrationTest {
         assertThat(posture.getComplianceScore()).isNotEqualTo(audit1.getComplianceScore());
         assertThat(posture.getLatestAuditSummary().getPassed()).isEqualTo(audit2.getSummary().getPassed());
         assertThat(posture.getLatestAuditSummary().getFailed()).isEqualTo(audit2.getSummary().getFailed());
+        // LATEST audit has 0 open findings
+        assertThat(posture.getOpenFindingsCount()).isEqualTo(0);
+
+        // Case 2: Audit 1 and Audit 2 both telnet-on gives openFindingsCount = 3, not 6
+        String ciscoTelnet = String.join("\n",
+                "version 17.6",
+                "hostname RTR-BOTH-TELNET",
+                "line vty 0 4",
+                " transport input telnet ssh"
+        );
+        Audit aBoth1 = auditOrchestrationService.startAudit("dev-both-telnet", "cfg-bt1", "v1.0", ciscoTelnet);
+        Audit aBoth2 = auditOrchestrationService.startAudit("dev-both-telnet", "cfg-bt2", "v2.0", ciscoTelnet);
+        assertThat(aBoth1).isNotNull();
+        assertThat(aBoth2).isNotNull();
+
+        DevicePostureResponse postureBoth = dashboardReportingService.getDevicePosture("dev-both-telnet");
+        assertThat(postureBoth).isNotNull();
+        assertThat(postureBoth.getOpenFindingsCount()).isEqualTo(3);
 
         System.out.println("=== TWO AUDITS LATEST POSTURE OUTPUT ===");
         System.out.println(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(posture));
+        System.out.println("=== BOTH TELNET-ON LATEST POSTURE OPEN FINDINGS: " + postureBoth.getOpenFindingsCount() + " (EXPECTED: 3, NOT 6) ===");
     }
 
     @Test
@@ -638,31 +681,198 @@ class DashboardReportingIntegrationTest {
     }
 
     @Test
-    @DisplayName("11. Severity and framework grouping example")
+    @DisplayName("11. Framework grouping keyed by framework code (CIS, NIST) with mixed severities")
     void testSeverityAndFrameworkGroupingExample() throws Exception {
         seedRulesAndTemplates();
 
-        String ciscoConfig = String.join("\n",
-                "version 17.6",
-                "hostname RTR-GRP",
-                "line vty 0 4",
-                " transport input telnet ssh"
-        );
-        auditOrchestrationService.startAudit("dev-grp-01", "cfg-grp", "v1.0", ciscoConfig);
+        // Register device and latest audit
+        AuditDocument audit = new AuditDocument();
+        audit.setId("aud-fw-grp-01");
+        audit.setDeviceId("dev-fw-grp-01");
+        audit.setConfigurationId("cfg-fw-01");
+        audit.setVersionId("v1.0");
+        audit.setStatus("COMPLETED");
+        audit.setCompletedAt(Instant.now());
+        auditRepository.save(audit);
 
-        DevicePostureResponse posture = dashboardReportingService.getDevicePosture("dev-grp-01");
+        // Finding 1: CIS, HIGH
+        FindingDocument f1 = new FindingDocument();
+        f1.setId("find-fw-01");
+        f1.setAuditId(audit.getId());
+        f1.setDeviceId(audit.getDeviceId());
+        f1.setControlCode("CIS-1.2.2");
+        f1.setFrameworkIds(List.of("CIS"));
+        f1.setSeverity("HIGH");
+        f1.setStatus("OPEN");
+        findingRepository.save(f1);
+
+        // Finding 2: CIS, HIGH
+        FindingDocument f2 = new FindingDocument();
+        f2.setId("find-fw-02");
+        f2.setAuditId(audit.getId());
+        f2.setDeviceId(audit.getDeviceId());
+        f2.setControlCode("CIS-2.1.1.2");
+        f2.setFrameworkIds(List.of("CIS"));
+        f2.setSeverity("HIGH");
+        f2.setStatus("OPEN");
+        findingRepository.save(f2);
+
+        // Finding 3: NIST, MEDIUM
+        FindingDocument f3 = new FindingDocument();
+        f3.setId("find-fw-03");
+        f3.setAuditId(audit.getId());
+        f3.setDeviceId(audit.getDeviceId());
+        f3.setControlCode("NIST-AC-17");
+        f3.setFrameworkIds(List.of("NIST"));
+        f3.setSeverity("MEDIUM");
+        f3.setStatus("OPEN");
+        findingRepository.save(f3);
+
+        DevicePostureResponse posture = dashboardReportingService.getDevicePosture(audit.getDeviceId());
         assertThat(posture).isNotNull();
         assertThat(posture.getOpenFindingsCount()).isEqualTo(3);
 
         Map<String, Long> bySev = posture.getOpenFindingsBySeverity();
-        assertThat(bySev.get("HIGH")).isEqualTo(3L);
-        assertThat(bySev.get("CRITICAL")).isEqualTo(0L);
+        assertThat(bySev.get("HIGH")).isEqualTo(2L);
+        assertThat(bySev.get("MEDIUM")).isEqualTo(1L);
 
         Map<String, Long> byFw = posture.getOpenFindingsByFramework();
-        assertThat(byFw).isNotEmpty();
+        assertThat(byFw.get("CIS")).isEqualTo(2L);
+        assertThat(byFw.get("NIST")).isEqualTo(1L);
+        assertThat(byFw.keySet()).containsExactlyInAnyOrder("CIS", "NIST");
 
         System.out.println("=== SEVERITY AND FRAMEWORK GROUPING OUTPUT ===");
         System.out.println("By Severity: " + objectMapper.writeValueAsString(bySev));
         System.out.println("By Framework: " + objectMapper.writeValueAsString(byFw));
+    }
+
+    @Test
+    @DisplayName("12. Fleet compliance score calculation with non-zero scores and null score exclusion")
+    void testFleetComplianceScoreWithNonZeroScoresAndNullExclusion() {
+        // Device 1: complianceScore = 28.6
+        AuditDocument audit1 = new AuditDocument();
+        audit1.setId("aud-fleet-01");
+        audit1.setDeviceId("dev-fleet-01");
+        audit1.setConfigurationId("cfg-01");
+        audit1.setVersionId("v1.0");
+        audit1.setStatus("COMPLETED");
+        audit1.setComplianceScore(28.6);
+        audit1.setCompletedAt(Instant.now());
+        auditRepository.save(audit1);
+
+        // Device 2: complianceScore = 85.7
+        AuditDocument audit2 = new AuditDocument();
+        audit2.setId("aud-fleet-02");
+        audit2.setDeviceId("dev-fleet-02");
+        audit2.setConfigurationId("cfg-02");
+        audit2.setVersionId("v1.0");
+        audit2.setStatus("COMPLETED");
+        audit2.setComplianceScore(85.7);
+        audit2.setCompletedAt(Instant.now());
+        auditRepository.save(audit2);
+
+        // Device 3: device registered in normalized configurations but complianceScore is null (not audited)
+        NormalizedConfigurationDocument norm3 = new NormalizedConfigurationDocument();
+        norm3.setId("norm-fleet-03");
+        norm3.setDeviceId("dev-fleet-03");
+        norm3.setVendor("Cisco");
+        norm3.setPlatform("IOS-XE");
+        norm3.setCreatedAt(Instant.now());
+        normalizedConfigRepository.save(norm3);
+
+        FleetSummaryResponse fleet = dashboardReportingService.getFleetSummary();
+        assertThat(fleet.getTotalDevices()).isEqualTo(3);
+        // Worked sum check: (28.6 + 85.7) / 2 = 114.3 / 2 = 57.15 -> rounded to 1 decimal place = 57.2
+        assertThat(fleet.getFleetComplianceScore()).isEqualTo(57.2);
+
+        System.out.println("=== FLEET WORKED AVERAGE OUTPUT ===");
+        System.out.println("Device 1 Score: 28.6%");
+        System.out.println("Device 2 Score: 85.7%");
+        System.out.println("Device 3 Score: null (excluded from average)");
+        System.out.println("Sum of Scored Devices: " + (28.6 + 85.7));
+        System.out.println("Count of Scored Devices: 2");
+        System.out.println("Worked Average: " + ((28.6 + 85.7) / 2.0) + " -> Rounded: " + fleet.getFleetComplianceScore() + "%");
+    }
+
+    @Test
+    @DisplayName("13. Remediation plans and Markdown show UNCONFIRMED confirmation status for Juniper")
+    void testRemediationPlansAndMarkdownShowConfirmationStatusForJuniper() throws Exception {
+        seedRulesAndTemplates();
+
+        String junosConfig = String.join("\n",
+                "set system services ssh",
+                "set system services telnet"
+        );
+        Audit audit = auditOrchestrationService.startAudit("dev-junos-conf-test", "cfg-j-conf", "v1.0", junosConfig);
+        List<FindingDocument> findings = findingRepository.findByAuditId(audit.getId());
+        assertThat(findings).isNotEmpty();
+        for (FindingDocument f : findings) {
+            remediationPlanService.createPlanForFindingId(f.getId());
+        }
+
+        AuditReportResponse report = dashboardReportingService.getAuditReport(audit.getId());
+        assertThat(report.getRemediationPlans()).isNotEmpty();
+
+        for (RemediationPlanDocument plan : report.getRemediationPlans()) {
+            assertThat(plan.getSteps()).isNotEmpty();
+            for (var step : plan.getSteps()) {
+                assertThat(step.getCommand()).contains("[UNCONFIRMED]");
+            }
+        }
+
+        String md = report.getMarkdownReport();
+        assertThat(md).contains("[UNCONFIRMED]");
+
+        System.out.println("=== JUNIPER REMEDIATION PLAN WITH CONFIRMATION STATUS OUTPUT ===");
+        for (RemediationPlanDocument plan : report.getRemediationPlans()) {
+            for (var step : plan.getSteps()) {
+                System.out.println("Step Command: " + step.getCommand());
+            }
+        }
+        System.out.println("Markdown Section 3 snippet:\n" + md.substring(md.indexOf("## 3. Remediation Plans")));
+    }
+
+    @Test
+    @DisplayName("14. Real DriftDetectionService run provides drift history event")
+    void testRealDriftDetectionServiceRunProvidesDriftHistory() throws Exception {
+        seedRulesAndTemplates();
+
+        // Audit 1: Clean config (v1.0)
+        String config1 = String.join("\n",
+                "version 17.6",
+                "hostname RTR-REAL-DRIFT",
+                "ip ssh version 2",
+                "line vty 0 4",
+                " transport input ssh"
+        );
+        Audit audit1 = auditOrchestrationService.startAudit("dev-real-drift-01", "cfg-rd-01", "v1.0", config1);
+
+        // Audit 2: Config with Telnet enabled (v2.0)
+        String config2 = String.join("\n",
+                "version 17.6",
+                "hostname RTR-REAL-DRIFT",
+                "ip ssh version 2",
+                "line vty 0 4",
+                " transport input telnet ssh"
+        );
+        Audit audit2 = auditOrchestrationService.startAudit("dev-real-drift-01", "cfg-rd-02", "v2.0", config2);
+
+        // Run real DriftDetectionService
+        var driftEvent = driftDetectionService.detectDriftByDocumentIds(
+                audit1.getNormalizedConfigurationId(),
+                audit2.getNormalizedConfigurationId());
+        assertThat(driftEvent).isNotNull();
+        assertThat(driftEvent.getImpact()).isEqualTo("INCREASED");
+
+        // Query drift history via DashboardReportingService
+        DeviceDriftHistoryResponse history = dashboardReportingService.getDeviceDriftHistory("dev-real-drift-01");
+        assertThat(history).isNotNull();
+        assertThat(history.getTotalEvents()).isEqualTo(1);
+        assertThat(history.getEvents().get(0).getImpact()).isEqualTo("INCREASED");
+        assertThat(history.getEvents().get(0).getFromVersion()).isEqualTo(1);
+        assertThat(history.getEvents().get(0).getToVersion()).isEqualTo(2);
+
+        System.out.println("=== REAL DRIFT DETECTION RUN DRIFT HISTORY OUTPUT ===");
+        System.out.println(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(history));
     }
 }

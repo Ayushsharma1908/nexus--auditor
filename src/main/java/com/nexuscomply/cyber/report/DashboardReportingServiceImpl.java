@@ -12,12 +12,17 @@ import com.nexuscomply.cyber.evidence.persistence.EvidenceDocument;
 import com.nexuscomply.cyber.evidence.persistence.EvidenceRepository;
 import com.nexuscomply.cyber.finding.persistence.FindingDocument;
 import com.nexuscomply.cyber.finding.persistence.FindingRepository;
+import com.nexuscomply.cyber.compliance.persistence.FrameworkRepository;
 import com.nexuscomply.cyber.normalization.NormalizedConfigurationDocument;
 import com.nexuscomply.cyber.normalization.NormalizedConfigurationRepository;
+import com.nexuscomply.cyber.remediation.model.PlanStep;
 import com.nexuscomply.cyber.remediation.persistence.RemediationPlanDocument;
 import com.nexuscomply.cyber.remediation.persistence.RemediationPlanRepository;
+import com.nexuscomply.cyber.remediation.persistence.RemediationTemplateDocument;
+import com.nexuscomply.cyber.remediation.persistence.RemediationTemplateRepository;
 import com.nexuscomply.cyber.risk.persistence.RiskAssessmentDocument;
 import com.nexuscomply.cyber.risk.persistence.RiskAssessmentRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -46,6 +51,32 @@ public class DashboardReportingServiceImpl implements DashboardReportingService 
     private final DriftEventRepository driftEventRepository;
     private final RemediationPlanRepository remediationPlanRepository;
     private final AiMappingRepository aiMappingRepository;
+    private final FrameworkRepository frameworkRepository;
+    private final RemediationTemplateRepository remediationTemplateRepository;
+
+    @Autowired
+    public DashboardReportingServiceImpl(
+            AuditRepository auditRepository,
+            NormalizedConfigurationRepository normalizedConfigRepository,
+            FindingRepository findingRepository,
+            EvidenceRepository evidenceRepository,
+            RiskAssessmentRepository riskAssessmentRepository,
+            DriftEventRepository driftEventRepository,
+            RemediationPlanRepository remediationPlanRepository,
+            AiMappingRepository aiMappingRepository,
+            @Autowired(required = false) FrameworkRepository frameworkRepository,
+            @Autowired(required = false) RemediationTemplateRepository remediationTemplateRepository) {
+        this.auditRepository = auditRepository;
+        this.normalizedConfigRepository = normalizedConfigRepository;
+        this.findingRepository = findingRepository;
+        this.evidenceRepository = evidenceRepository;
+        this.riskAssessmentRepository = riskAssessmentRepository;
+        this.driftEventRepository = driftEventRepository;
+        this.remediationPlanRepository = remediationPlanRepository;
+        this.aiMappingRepository = aiMappingRepository;
+        this.frameworkRepository = frameworkRepository;
+        this.remediationTemplateRepository = remediationTemplateRepository;
+    }
 
     public DashboardReportingServiceImpl(
             AuditRepository auditRepository,
@@ -56,14 +87,9 @@ public class DashboardReportingServiceImpl implements DashboardReportingService 
             DriftEventRepository driftEventRepository,
             RemediationPlanRepository remediationPlanRepository,
             AiMappingRepository aiMappingRepository) {
-        this.auditRepository = auditRepository;
-        this.normalizedConfigRepository = normalizedConfigRepository;
-        this.findingRepository = findingRepository;
-        this.evidenceRepository = evidenceRepository;
-        this.riskAssessmentRepository = riskAssessmentRepository;
-        this.driftEventRepository = driftEventRepository;
-        this.remediationPlanRepository = remediationPlanRepository;
-        this.aiMappingRepository = aiMappingRepository;
+        this(auditRepository, normalizedConfigRepository, findingRepository, evidenceRepository,
+                riskAssessmentRepository, driftEventRepository, remediationPlanRepository, aiMappingRepository,
+                null, null);
     }
 
     @Override
@@ -101,8 +127,9 @@ public class DashboardReportingServiceImpl implements DashboardReportingService 
         posture.setPlatform(platform);
 
         // Latest audit summary & compliance score
+        AuditDocument latestAudit = null;
         if (!audits.isEmpty()) {
-            AuditDocument latestAudit = audits.stream()
+            latestAudit = audits.stream()
                     .max(Comparator.comparing(a -> a.getCompletedAt() != null ? a.getCompletedAt()
                             : (a.getStartedAt() != null ? a.getStartedAt() : a.getCreatedAt())))
                     .orElse(audits.get(0));
@@ -110,16 +137,25 @@ public class DashboardReportingServiceImpl implements DashboardReportingService 
             posture.setLatestAuditSummary(latestAudit.getSummary());
             posture.setComplianceScore(latestAudit.getComplianceScore());
             if (latestAudit.getSummary() != null) {
-                posture.setCoverage(latestAudit.getSummary().getCoverage());
+                AuditSummary s = latestAudit.getSummary();
+                int denom = s.getTotalControls() - s.getNotApplicable();
+                double cov = denom > 0 ? (double) (s.getPassed() + s.getFailed()) / denom : 0.0;
+                posture.setCoverage(cov);
+                posture.setUnknownCount(s.getUnknown());
+                posture.setNotApplicableCount(s.getNotApplicable());
             }
         }
 
-        // Open findings by severity and framework
-        List<FindingDocument> openFindings = findingRepository.findByDeviceIdAndStatus(deviceId, "OPEN");
-        if (openFindings.isEmpty()) {
-            openFindings = findingRepository.findByDeviceId(deviceId).stream()
-                    .filter(f -> "OPEN".equalsIgnoreCase(f.getStatus()))
-                    .toList();
+        // Open findings by severity and framework from LATEST audit only
+        List<FindingDocument> openFindings = new ArrayList<>();
+        if (latestAudit != null) {
+            List<FindingDocument> auditFindings = findingRepository.findByAuditIdAndStatus(latestAudit.getId(), "OPEN");
+            if (auditFindings.isEmpty()) {
+                auditFindings = findingRepository.findByAuditId(latestAudit.getId()).stream()
+                        .filter(f -> "OPEN".equalsIgnoreCase(f.getStatus()))
+                        .toList();
+            }
+            openFindings = auditFindings;
         }
         posture.setOpenFindingsCount(openFindings.size());
 
@@ -136,10 +172,9 @@ public class DashboardReportingServiceImpl implements DashboardReportingService 
 
         Map<String, Long> byFramework = new LinkedHashMap<>();
         for (FindingDocument f : openFindings) {
-            if (f.getFrameworkIds() != null) {
-                for (String fwId : f.getFrameworkIds()) {
-                    byFramework.put(fwId, byFramework.getOrDefault(fwId, 0L) + 1L);
-                }
+            Set<String> fwKeys = resolveFrameworkKeys(f);
+            for (String key : fwKeys) {
+                byFramework.put(key, byFramework.getOrDefault(key, 0L) + 1L);
             }
         }
         posture.setOpenFindingsByFramework(byFramework);
@@ -295,8 +330,11 @@ public class DashboardReportingServiceImpl implements DashboardReportingService 
         report.setSummary(summary);
         report.setComplianceScore(auditDoc.getComplianceScore());
         if (summary != null) {
-            report.setCoverage(summary.getCoverage());
+            int denom = summary.getTotalControls() - summary.getNotApplicable();
+            double cov = denom > 0 ? (double) (summary.getPassed() + summary.getFailed()) / denom : 0.0;
+            report.setCoverage(cov);
             report.setUnknownCount(summary.getUnknown());
+            report.setNotApplicableCount(summary.getNotApplicable());
         }
 
         // Vendor & platform resolution
@@ -332,11 +370,16 @@ public class DashboardReportingServiceImpl implements DashboardReportingService 
             if (remediationPlanRepository != null) {
                 plan = remediationPlanRepository.findFirstByFindingIdOrderByCreatedAtDesc(f.getId()).orElse(null);
             }
-            if (plan != null && !plans.contains(plan)) {
-                plans.add(plan);
+            RemediationPlanDocument reportingPlan = null;
+            if (plan != null) {
+                String confStatus = resolveConfirmationStatus(plan, f, vendor, platform);
+                reportingPlan = buildReportingPlan(plan, confStatus);
+                if (!plans.contains(reportingPlan)) {
+                    plans.add(reportingPlan);
+                }
             }
 
-            entries.add(new FindingReportEntry(f, evidence, plan));
+            entries.add(new FindingReportEntry(f, evidence, reportingPlan));
         }
 
         report.setFindings(entries);
@@ -354,6 +397,105 @@ public class DashboardReportingServiceImpl implements DashboardReportingService 
         report.setMarkdownReport(md);
 
         return report;
+    }
+
+    private RemediationPlanDocument buildReportingPlan(RemediationPlanDocument plan, String confStatus) {
+        RemediationPlanDocument reportingPlan = new RemediationPlanDocument();
+        reportingPlan.setId(plan.getId());
+        reportingPlan.setFindingId(plan.getFindingId());
+        reportingPlan.setDeviceId(plan.getDeviceId());
+        reportingPlan.setTemplateId(plan.getTemplateId());
+        reportingPlan.setStatus(plan.getStatus());
+        reportingPlan.setValidation(plan.getValidation());
+        reportingPlan.setVerification(plan.getVerification());
+        reportingPlan.setCreatedBy(plan.getCreatedBy());
+        reportingPlan.setCreatedAt(plan.getCreatedAt());
+        reportingPlan.setUpdatedAt(plan.getUpdatedAt());
+
+        List<PlanStep> reportingSteps = new ArrayList<>();
+        if (plan.getSteps() != null) {
+            for (PlanStep origStep : plan.getSteps()) {
+                String cmd = origStep.getCommand();
+                if (cmd != null && !cmd.contains("[CONFIRMED]") && !cmd.contains("[UNCONFIRMED]")) {
+                    cmd = cmd + " [" + confStatus + "]";
+                }
+                reportingSteps.add(new PlanStep(origStep.getOrder(), origStep.getAction(), cmd, origStep.getDescription()));
+            }
+        }
+        reportingPlan.setSteps(reportingSteps);
+        return reportingPlan;
+    }
+
+    private String resolveConfirmationStatus(RemediationPlanDocument plan, FindingDocument f, String vendor, String platform) {
+        RemediationTemplateDocument tmpl = null;
+        if (remediationTemplateRepository != null && plan.getTemplateId() != null) {
+            tmpl = remediationTemplateRepository.findById(plan.getTemplateId()).orElse(null);
+        }
+        if (tmpl == null && remediationTemplateRepository != null && f.getCanonicalField() != null) {
+            tmpl = remediationTemplateRepository.findByVendorAndPlatformAndCanonicalField(vendor, platform, f.getCanonicalField()).orElse(null);
+        }
+        if (tmpl != null) {
+            String desc = tmpl.getDescription() != null ? tmpl.getDescription() : "";
+            String title = tmpl.getTitle() != null ? tmpl.getTitle() : "";
+            if (desc.contains("[UNCONFIRMED]") || title.contains("[UNCONFIRMED]")) {
+                return "UNCONFIRMED";
+            }
+            if ("Juniper".equalsIgnoreCase(tmpl.getVendor()) || "Juniper".equalsIgnoreCase(vendor)) {
+                return "UNCONFIRMED";
+            }
+            return "CONFIRMED";
+        }
+        if ("Juniper".equalsIgnoreCase(vendor)) {
+            return "UNCONFIRMED";
+        }
+        return "CONFIRMED";
+    }
+
+    private Set<String> resolveFrameworkKeys(FindingDocument f) {
+        Set<String> keys = new LinkedHashSet<>();
+        if (f.getFrameworkIds() != null && !f.getFrameworkIds().isEmpty()) {
+            for (String fwId : f.getFrameworkIds()) {
+                String resolved = resolveFrameworkNameOrCode(fwId);
+                if (resolved != null) {
+                    keys.add(resolved);
+                }
+            }
+        }
+        if (keys.isEmpty() && f.getControlCode() != null) {
+            String ccUpper = f.getControlCode().toUpperCase();
+            if (ccUpper.startsWith("CIS")) keys.add("CIS");
+            else if (ccUpper.startsWith("NIST")) keys.add("NIST");
+            else if (ccUpper.startsWith("ISO")) keys.add("ISO");
+            else keys.add(f.getControlCode());
+        }
+        if (keys.isEmpty()) {
+            keys.add("OTHER");
+        }
+        return keys;
+    }
+
+    private String resolveFrameworkNameOrCode(String fwId) {
+        if (fwId == null || fwId.isBlank()) return null;
+        String upper = fwId.toUpperCase();
+        if (upper.startsWith("CIS")) return "CIS";
+        if (upper.startsWith("NIST")) return "NIST";
+        if (upper.startsWith("ISO")) return "ISO";
+        if (frameworkRepository != null) {
+            var opt = frameworkRepository.findById(fwId);
+            if (opt.isPresent()) {
+                String code = opt.get().getCode() != null ? opt.get().getCode().toUpperCase() : "";
+                if (code.startsWith("CIS")) return "CIS";
+                if (code.startsWith("NIST")) return "NIST";
+                if (code.startsWith("ISO")) return "ISO";
+                if (opt.get().getCode() != null && !opt.get().getCode().isBlank()) {
+                    return opt.get().getCode();
+                }
+                if (opt.get().getName() != null && !opt.get().getName().isBlank()) {
+                    return opt.get().getName();
+                }
+            }
+        }
+        return null;
     }
 
     private String renderMarkdownReport(AuditReportResponse r) {
@@ -375,19 +517,19 @@ public class DashboardReportingServiceImpl implements DashboardReportingService 
             sb.append("| **Total Controls** | ").append(s.getTotalControls()).append(" |\n");
             sb.append("| **Passed Controls** | ").append(s.getPassed()).append(" |\n");
             sb.append("| **Failed Controls** | ").append(s.getFailed()).append(" |\n");
-            sb.append("| **UNKNOWN Controls (Pending Review)** | ").append(s.getUnknown()).append(" |\n");
-            sb.append("| **Not Applicable Controls** | ").append(s.getNotApplicable()).append(" |\n");
+            sb.append("| **UNKNOWN Controls (Pending Review)** | ").append(r.getUnknownCount()).append(" |\n");
+            sb.append("| **Not Applicable Controls** | ").append(r.getNotApplicableCount()).append(" |\n");
             sb.append("| **Evaluated Controls** | ").append(s.getEvaluated()).append(" |\n");
-            sb.append("| **Control Coverage** | ").append(String.format("%.1f%%", s.getCoverage() * 100.0)).append(" |\n");
+            sb.append("| **Control Coverage** | ").append(String.format("%.1f%%", r.getCoverage() != null ? r.getCoverage() * 100.0 : 0.0)).append(" |\n");
             sb.append("| **Compliance Score** | ").append(r.getComplianceScore() != null ? String.format("%.1f%%", r.getComplianceScore()) : "N/A").append(" |\n\n");
         } else {
             sb.append("| Summary | None |\n\n");
         }
 
         sb.append("> [!IMPORTANT]\n");
-        sb.append("> **Policy on UNKNOWN Evaluated Controls:** Controls with UNKNOWN evaluation status (count: ")
+        sb.append("> **Policy on UNKNOWN Controls:** Controls with UNKNOWN evaluation status (count: ")
                 .append(r.getUnknownCount())
-                .append(") are strictly isolated and **NEVER** treated as PASS. An UNKNOWN evaluation reflects unmapped syntax or unreviewed platform state requiring human review or approved mapping before credit is awarded.\n\n");
+                .append("). UNKNOWN means the field was not observed in the configuration; it is not a pass and may indicate a gap.\n\n");
 
         sb.append("## 2. Findings & Evidence Traceability (Total: ").append(r.getFindings().size()).append(")\n\n");
         if (r.getFindings().isEmpty()) {

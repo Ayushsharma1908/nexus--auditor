@@ -20,6 +20,8 @@ public class DevicePostureResponse {
     private AuditSummary latestAuditSummary;
     private Double complianceScore;
     private Double coverage;
+    private int unknownCount;
+    private int notApplicableCount;
     private int openFindingsCount;
     private Map<String, Long> openFindingsBySeverity = new LinkedHashMap<>();
     private Map<String, Long> openFindingsByFramework = new LinkedHashMap<>();
@@ -77,6 +79,22 @@ public class DevicePostureResponse {
 
     public void setCoverage(Double coverage) {
         this.coverage = coverage;
+    }
+
+    public int getUnknownCount() {
+        return unknownCount;
+    }
+
+    public void setUnknownCount(int unknownCount) {
+        this.unknownCount = unknownCount;
+    }
+
+    public int getNotApplicableCount() {
+        return notApplicableCount;
+    }
+
+    public void setNotApplicableCount(int notApplicableCount) {
+        this.notApplicableCount = notApplicableCount;
     }
 
     public int getOpenFindingsCount() {
