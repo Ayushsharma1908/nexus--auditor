@@ -429,4 +429,146 @@ class GeminiSuggestionProviderTest {
         assertEquals("security-officer-01", approved.getReview().getReviewerId());
         assertNotNull(approved.getReview().getReviewedAt());
     }
+
+    @Test
+    @DisplayName("Payload Hardening: Validates system instruction and responseSchema structure in request body")
+    void testHardenedPayloadStructureAndResponseSchema() {
+        AtomicReference<String> requestBodyRef = new AtomicReference<>();
+
+        mockGeminiServer.createContext("/v1beta/models/gemini-2.5-flash:generateContent", exchange -> {
+            try {
+                String requestBody = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+                requestBodyRef.set(requestBody);
+            } catch (Exception ignored) {}
+
+            String responseJson = "{\n" +
+                    "  \"candidates\": [\n" +
+                    "    {\n" +
+                    "      \"content\": {\n" +
+                    "        \"parts\": [\n" +
+                    "          {\n" +
+                    "            \"text\": \"{\\\"canonicalField\\\": \\\"security.telnet.enabled\\\", \\\"mappedValue\\\": \\\"true\\\", \\\"confidence\\\": 0.95, \\\"rationale\\\": \\\"Matches schema\\\"}\"\n" +
+                    "          }\n" +
+                    "        ]\n" +
+                    "      }\n" +
+                    "    }\n" +
+                    "  ]\n" +
+                    "}";
+            byte[] bytes = responseJson.getBytes(StandardCharsets.UTF_8);
+            exchange.sendResponseHeaders(200, bytes.length);
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(bytes);
+            }
+        });
+
+        SuggestionResult result = provider.propose("Cisco", "IOS-XE", "sample-command-xyz", CanonicalFieldAllowlist.getAllowedFields());
+        assertNotNull(result);
+
+        // Verify request payload conforms to exact Gemini API structured specification
+        assertNotNull(requestBodyRef.get(), "Request body must have been transmitted");
+        try {
+            com.fasterxml.jackson.databind.JsonNode payload = objectMapper.readTree(requestBodyRef.get());
+
+            // 1. System instruction checks
+            assertTrue(payload.has("systemInstruction"));
+            String sysText = payload.path("systemInstruction").path("parts").get(0).path("text").asText();
+            assertTrue(sysText.contains("expert network security auditor"));
+            assertTrue(sysText.contains("Cisco"));
+            assertTrue(sysText.contains("IOS-XE"));
+
+            // 2. Generation config structured JSON schema checks
+            com.fasterxml.jackson.databind.JsonNode genConfig = payload.path("generationConfig");
+            assertEquals("application/json", genConfig.path("responseMimeType").asText());
+
+            com.fasterxml.jackson.databind.JsonNode schema = genConfig.path("responseSchema");
+            assertEquals("OBJECT", schema.path("type").asText());
+
+            com.fasterxml.jackson.databind.JsonNode props = schema.path("properties");
+            assertEquals("STRING", props.path("canonicalField").path("type").asText());
+            assertTrue(props.path("canonicalField").path("nullable").asBoolean());
+            assertEquals("STRING", props.path("mappedValue").path("type").asText());
+            assertTrue(props.path("mappedValue").path("nullable").asBoolean());
+            assertEquals("NUMBER", props.path("confidence").path("type").asText());
+            assertEquals("STRING", props.path("rationale").path("type").asText());
+            assertEquals("STRING", props.path("unit").path("type").asText());
+            assertTrue(props.path("unit").path("nullable").asBoolean());
+
+            com.fasterxml.jackson.databind.JsonNode required = schema.path("required");
+            assertTrue(required.isArray());
+            assertEquals("confidence", required.get(0).asText());
+            assertEquals("rationale", required.get(1).asText());
+
+        } catch (Exception e) {
+            fail("Failed to parse request JSON payload: " + e.getMessage());
+        }
+    }
+
+    @Test
+    @DisplayName("Type Coercion: Correctly parses stringified mappedValue for boolean, integer, and string fields")
+    void testStringifiedMappedValueCoercion() {
+        // Test Integer field coercion from string "2"
+        mockGeminiServer.createContext("/v1beta/models/gemini-2.5-flash:generateContent", exchange -> {
+            String responseJson = "{\n" +
+                    "  \"candidates\": [\n" +
+                    "    {\n" +
+                    "      \"content\": {\n" +
+                    "        \"parts\": [\n" +
+                    "          {\n" +
+                    "            \"text\": \"{\\\"canonicalField\\\": \\\"security.ssh.version\\\", \\\"mappedValue\\\": \\\"2\\\", \\\"confidence\\\": 0.99, \\\"rationale\\\": \\\"SSH v2 string coerce\\\"}\"\n" +
+                    "          }\n" +
+                    "        ]\n" +
+                    "      }\n" +
+                    "    }\n" +
+                    "  ]\n" +
+                    "}";
+            byte[] bytes = responseJson.getBytes(StandardCharsets.UTF_8);
+            exchange.sendResponseHeaders(200, bytes.length);
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(bytes);
+            }
+        });
+
+        SuggestionResult intResult = provider.propose("Juniper", "JUNOS", "test-ssh-line", CanonicalFieldAllowlist.getAllowedFields());
+        assertNotNull(intResult);
+        assertEquals(2, intResult.getMappedValue(), "String '2' must be coerced to Integer 2");
+        assertInstanceOf(Integer.class, intResult.getMappedValue());
+    }
+
+    @Test
+    @DisplayName("Direct Invocation: callGeminiWithTimeout returns parsed SuggestionResult directly")
+    void testDirectCallGeminiWithTimeout() throws Exception {
+        mockGeminiServer.createContext("/v1beta/models/gemini-2.5-flash:generateContent", exchange -> {
+            String responseJson = "{\n" +
+                    "  \"candidates\": [\n" +
+                    "    {\n" +
+                    "      \"content\": {\n" +
+                    "        \"parts\": [\n" +
+                    "          {\n" +
+                    "            \"text\": \"{\\\"canonicalField\\\": \\\"security.snmp.version\\\", \\\"mappedValue\\\": \\\"3\\\", \\\"confidence\\\": 0.95, \\\"rationale\\\": \\\"SNMP v3 string\\\"}\"\n" +
+                    "          }\n" +
+                    "        ]\n" +
+                    "      }\n" +
+                    "    }\n" +
+                    "  ]\n" +
+                    "}";
+            byte[] bytes = responseJson.getBytes(StandardCharsets.UTF_8);
+            exchange.sendResponseHeaders(200, bytes.length);
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(bytes);
+            }
+        });
+
+        SuggestionResult directResult = provider.callGeminiWithTimeout(
+                "Fortinet",
+                "FortiOS",
+                "snmp-user admin v3",
+                CanonicalFieldAllowlist.getAllowedFields()
+        );
+
+        assertNotNull(directResult);
+        assertEquals("security.snmp.version", directResult.getCanonicalField());
+        assertEquals("3", directResult.getMappedValue());
+        assertInstanceOf(String.class, directResult.getMappedValue());
+    }
 }
+
