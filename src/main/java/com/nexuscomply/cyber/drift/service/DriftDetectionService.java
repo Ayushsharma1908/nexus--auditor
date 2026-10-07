@@ -40,4 +40,9 @@ public interface DriftDetectionService {
      * Retrieves all drift events for a device.
      */
     List<DriftEvent> getDriftEventsByDeviceId(String deviceId);
+
+    /**
+     * Calculates overall drift impact according to risk delta and unknown status.
+     */
+    String calculateImpact(List<com.nexuscomply.cyber.drift.model.DriftChange> changes, int totalRiskBefore, int totalRiskAfter);
 }

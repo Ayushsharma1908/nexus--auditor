@@ -53,6 +53,9 @@ public class RemediationTemplateDocument {
     private CommandType commandType = CommandType.DERIVABLE_REGEX;
     private String gapExplanation;
 
+    @Indexed
+    private String confirmationStatus = "UNCONFIRMED";
+
     private Instant createdAt;
     private Instant updatedAt;
 
@@ -200,5 +203,13 @@ public class RemediationTemplateDocument {
 
     public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public String getConfirmationStatus() {
+        return confirmationStatus != null ? confirmationStatus : "UNCONFIRMED";
+    }
+
+    public void setConfirmationStatus(String confirmationStatus) {
+        this.confirmationStatus = confirmationStatus;
     }
 }

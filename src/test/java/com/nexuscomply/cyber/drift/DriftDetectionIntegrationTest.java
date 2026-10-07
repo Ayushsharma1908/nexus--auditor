@@ -611,7 +611,7 @@ class DriftDetectionIntegrationTest {
         assertThat(change.getClassification()).isEqualTo(DriftClassification.UNKNOWN_IMPACT.name());
         assertThat(event.getRiskBefore()).isEqualTo(70);
         assertThat(event.getRiskAfter()).isEqualTo(0);
-        assertThat(event.getImpact()).isEqualTo("UNKNOWN");
+        assertThat(event.getImpact()).isEqualTo("DECREASED");
 
         Document rawDoc = mongoTemplate.getCollection("drift_events").find(new Document("deviceId", deviceId)).first();
         System.out.println("=== TRUE TO NULL PERSISTED DRIFT EVENT ===");
@@ -619,7 +619,7 @@ class DriftDetectionIntegrationTest {
     }
 
     @Test
-    @DisplayName("A5.2b: Telnet true->false (IMPROVED) plus field with no rule (security.https.enabled) yields impact UNKNOWN despite risk decrease 70->0")
+    @DisplayName("A5.2b: Telnet true->false (IMPROVED) plus field with no rule (security.https.enabled) yields impact DECREASED since risk decrease 70->0 takes precedence")
     void testTelnetImproved_PlusFieldWithNoRule_YieldsUnknownImpact() {
         cisSeeder.seed();
 
@@ -665,11 +665,64 @@ class DriftDetectionIntegrationTest {
 
         assertThat(event.getRiskBefore()).isEqualTo(70);
         assertThat(event.getRiskAfter()).isEqualTo(0);
-        assertThat(event.getImpact()).isEqualTo("UNKNOWN");
+        assertThat(event.getImpact()).isEqualTo("DECREASED");
 
         Document rawDoc = mongoTemplate.getCollection("drift_events").find(new Document("deviceId", deviceId)).first();
         System.out.println("=== TELNET IMPROVED PLUS NO-RULE FIELD PERSISTED DRIFT EVENT ===");
         System.out.println(rawDoc != null ? rawDoc.toJson() : "null");
+    }
+
+    @Test
+    @DisplayName("Task 2.13: Telnet false->true (risk 0->70) plus unmapped https change evaluates to INCREASED (not UNKNOWN)")
+    void testTelnetDegraded_PlusUnmappedHttps_YieldsIncreasedImpact() {
+        cisSeeder.seed();
+
+        String deviceId = "dev-drift-degraded-plus-unmapped";
+        NormalizedConfigurationDocument docA = new NormalizedConfigurationDocument();
+        docA.setId("norm-dpum-1");
+        docA.setDeviceId(deviceId);
+        docA.setConfigurationId("cfg-dpum-1");
+        docA.setVersionId("ver-dpum-1");
+        docA.setVendor("Cisco");
+        docA.setPlatform("IOS-XE");
+        CanonicalSecurityModel canonA = new CanonicalSecurityModel();
+        canonA.setTelnet(false);
+        canonA.setHttps(false);
+        docA.setCanonical(canonA);
+        normalizedConfigRepository.save(docA);
+
+        NormalizedConfigurationDocument docB = new NormalizedConfigurationDocument();
+        docB.setId("norm-dpum-2");
+        docB.setDeviceId(deviceId);
+        docB.setConfigurationId("cfg-dpum-2");
+        docB.setVersionId("ver-dpum-2");
+        docB.setVendor("Cisco");
+        docB.setPlatform("IOS-XE");
+        CanonicalSecurityModel canonB = new CanonicalSecurityModel();
+        canonB.setTelnet(true);
+        canonB.setHttps(true);
+        docB.setCanonical(canonB);
+        normalizedConfigRepository.save(docB);
+
+        DriftEvent event = driftDetectionService.detectDrift(docA, docB);
+        assertThat(event.getChanges()).hasSize(2);
+
+        DriftChange telnetChange = event.getChanges().stream()
+                .filter(c -> "security.telnet.enabled".equals(c.getCanonicalField()))
+                .findFirst().orElseThrow();
+        assertThat(telnetChange.getClassification()).isEqualTo(DriftClassification.DEGRADED.name());
+
+        DriftChange httpsChange = event.getChanges().stream()
+                .filter(c -> "security.https.enabled".equals(c.getCanonicalField()))
+                .findFirst().orElseThrow();
+        assertThat(httpsChange.getClassification()).isEqualTo(DriftClassification.UNKNOWN_IMPACT.name());
+
+        assertThat(event.getRiskBefore()).isEqualTo(0);
+        assertThat(event.getRiskAfter()).isEqualTo(70);
+        assertThat(event.getImpact()).isEqualTo("INCREASED");
+
+        System.out.println("=== TASK 2.13 TELNET DEGRADED PLUS UNMAPPED HTTPS DRIFT IMPACT ===");
+        System.out.printf("Risk Delta: %d -> %d (Impact = %s)%n", event.getRiskBefore(), event.getRiskAfter(), event.getImpact());
     }
 
     @Test

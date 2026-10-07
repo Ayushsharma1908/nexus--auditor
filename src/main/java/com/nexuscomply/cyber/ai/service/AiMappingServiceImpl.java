@@ -1,5 +1,7 @@
 package com.nexuscomply.cyber.ai.service;
 
+import com.nexuscomply.cyber.ai.SecretSanitizer;
+import com.nexuscomply.cyber.ai.SyntaxNoiseFilter;
 import com.nexuscomply.cyber.ai.persistence.AiJobDocument;
 import com.nexuscomply.cyber.ai.persistence.AiJobRepository;
 import com.nexuscomply.cyber.ai.persistence.AiMappingDocument;
@@ -53,7 +55,13 @@ public class AiMappingServiceImpl implements AiMappingService {
         }
 
         String trimmed = rawSyntax.trim();
-        Optional<AiMappingDocument> existing = aiMappingRepository.findByVendorAndPlatformAndRawSyntax(vendor, platform, trimmed);
+        if (SyntaxNoiseFilter.isNoise(trimmed)) {
+            return null;
+        }
+
+        String sanitized = SecretSanitizer.sanitize(trimmed);
+
+        Optional<AiMappingDocument> existing = aiMappingRepository.findByVendorAndPlatformAndRawSyntax(vendor, platform, sanitized);
         if (existing.isPresent()) {
             return existing.get();
         }
@@ -63,7 +71,7 @@ public class AiMappingServiceImpl implements AiMappingService {
         doc.setId(UUID.randomUUID().toString());
         doc.setVendor(vendor);
         doc.setPlatform(platform);
-        doc.setRawSyntax(trimmed);
+        doc.setRawSyntax(sanitized);
         doc.setStatus("PENDING_REVIEW");
         doc.setUsageCount(0);
         doc.setReview(new AiReview(null, null, null));
@@ -87,9 +95,10 @@ public class AiMappingServiceImpl implements AiMappingService {
         job.setCreatedAt(now);
         job.setUpdatedAt(now);
 
+        String sanitizedSyntax = SecretSanitizer.sanitize(doc.getRawSyntax());
         Map<String, Object> inputMap = new LinkedHashMap<>();
         inputMap.put("unknownCount", 1);
-        inputMap.put("rawSyntax", doc.getRawSyntax());
+        inputMap.put("rawSyntax", sanitizedSyntax);
         inputMap.put("vendor", doc.getVendor());
         inputMap.put("platform", doc.getPlatform());
         job.setInput(inputMap);
@@ -100,7 +109,7 @@ public class AiMappingServiceImpl implements AiMappingService {
             SuggestionResult suggestion = suggestionProvider.propose(
                     doc.getVendor(),
                     doc.getPlatform(),
-                    doc.getRawSyntax(),
+                    sanitizedSyntax,
                     CanonicalFieldAllowlist.getAllowedFields()
             );
 

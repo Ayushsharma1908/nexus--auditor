@@ -377,6 +377,19 @@ public class RemediationTemplateSeeder {
             doc.setVersion(1);
             doc.setCommandType(def.getCommandType());
             doc.setGapExplanation(def.getGapExplanation());
+
+            String confStatus = "CONFIRMED";
+            if (def.getDescription() != null && def.getDescription().contains("[UNCONFIRMED]")) {
+                confStatus = "UNCONFIRMED";
+            } else if ("Juniper".equalsIgnoreCase(def.getVendor())) {
+                confStatus = "UNCONFIRMED";
+            } else if ("Fortinet".equalsIgnoreCase(def.getVendor()) && def.getCommandType() != CommandType.PLATFORM_GAP) {
+                confStatus = "UNCONFIRMED";
+            } else if ("Palo Alto".equalsIgnoreCase(def.getVendor()) && !"security.telnet.enabled".equalsIgnoreCase(def.getCanonicalField()) && def.getCommandType() != CommandType.PLATFORM_GAP) {
+                confStatus = "UNCONFIRMED";
+            }
+            doc.setConfirmationStatus(confStatus);
+
             doc.setUpdatedAt(now);
 
             RemediationTemplateDocument saved = repository.save(doc);

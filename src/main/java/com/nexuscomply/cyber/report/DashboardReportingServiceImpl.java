@@ -435,6 +435,9 @@ public class DashboardReportingServiceImpl implements DashboardReportingService 
             tmpl = remediationTemplateRepository.findByVendorAndPlatformAndCanonicalField(vendor, platform, f.getCanonicalField()).orElse(null);
         }
         if (tmpl != null) {
+            if (tmpl.getConfirmationStatus() != null) {
+                return tmpl.getConfirmationStatus();
+            }
             String desc = tmpl.getDescription() != null ? tmpl.getDescription() : "";
             String title = tmpl.getTitle() != null ? tmpl.getTitle() : "";
             if (desc.contains("[UNCONFIRMED]") || title.contains("[UNCONFIRMED]")) {
@@ -526,10 +529,7 @@ public class DashboardReportingServiceImpl implements DashboardReportingService 
             sb.append("| Summary | None |\n\n");
         }
 
-        sb.append("> [!IMPORTANT]\n");
-        sb.append("> **Policy on UNKNOWN Controls:** Controls with UNKNOWN evaluation status (count: ")
-                .append(r.getUnknownCount())
-                .append("). UNKNOWN means the field was not observed in the configuration; it is not a pass and may indicate a gap.\n\n");
+        sb.append("> **Note on UNKNOWN Controls:** UNKNOWN means the field was not observed in the configuration; it is not a pass and may indicate a gap.\n\n");
 
         sb.append("## 2. Findings & Evidence Traceability (Total: ").append(r.getFindings().size()).append(")\n\n");
         if (r.getFindings().isEmpty()) {
@@ -549,8 +549,10 @@ public class DashboardReportingServiceImpl implements DashboardReportingService 
                 if (!entry.getEvidence().isEmpty()) {
                     sb.append("- **Traceable Evidence:**\n");
                     for (EvidenceDocument ev : entry.getEvidence()) {
+                        String rawSnippet = ev.getSource() != null ? ev.getSource().getRawText() : "N/A";
+                        rawSnippet = com.nexuscomply.cyber.ai.SecretSanitizer.sanitize(rawSnippet);
                         sb.append("  - Line ").append(ev.getSource() != null ? ev.getSource().getLineNumber() : "?")
-                                .append(": `").append(ev.getSource() != null ? ev.getSource().getRawText() : "N/A").append("`")
+                                .append(": `").append(rawSnippet).append("`")
                                 .append(" (SourceType: `").append(ev.getSource() != null ? ev.getSource().getSourceType() : "N/A").append("`)\n");
                     }
                 }
@@ -565,6 +567,14 @@ public class DashboardReportingServiceImpl implements DashboardReportingService 
         if (r.getRemediationPlans().isEmpty()) {
             sb.append("*No remediation plans generated for this audit execution.*\n\n");
         } else {
+            boolean hasUnconfirmed = r.getRemediationPlans().stream()
+                    .filter(p -> p.getSteps() != null)
+                    .flatMap(p -> p.getSteps().stream())
+                    .anyMatch(step -> step.getCommand() != null && step.getCommand().contains("[UNCONFIRMED]"));
+            if (hasUnconfirmed) {
+                sb.append("> [!WARNING]\n");
+                sb.append("> **Unconfirmed Remediation Commands:** One or more remediation commands below are marked as `[UNCONFIRMED]`. These commands represent unconfirmed vendor heuristics and must be validated before production execution.\n\n");
+            }
             for (RemediationPlanDocument plan : r.getRemediationPlans()) {
                 sb.append("### Plan: `").append(plan.getId()).append("` (Status: `").append(plan.getStatus()).append("`)\n");
                 if (plan.getSteps() != null) {
@@ -585,7 +595,8 @@ public class DashboardReportingServiceImpl implements DashboardReportingService 
             sb.append("*No syntax items currently pending human or AI review for this platform.*\n\n");
         } else {
             for (AiMappingDocument mapping : r.getPendingUnknownSyntax()) {
-                sb.append("- `").append(mapping.getRawSyntax()).append("` (Status: `").append(mapping.getStatus()).append("`)\n");
+                String sanitizedSyntax = com.nexuscomply.cyber.ai.SecretSanitizer.sanitize(mapping.getRawSyntax());
+                sb.append("- `").append(sanitizedSyntax).append("` (Status: `").append(mapping.getStatus()).append("`)\n");
             }
             sb.append("\n");
         }

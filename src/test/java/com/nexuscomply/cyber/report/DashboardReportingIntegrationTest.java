@@ -822,6 +822,8 @@ class DashboardReportingIntegrationTest {
 
         String md = report.getMarkdownReport();
         assertThat(md).contains("[UNCONFIRMED]");
+        assertThat(md).contains("Unconfirmed Remediation Commands");
+        assertThat(md).contains("unconfirmed vendor heuristics");
 
         System.out.println("=== JUNIPER REMEDIATION PLAN WITH CONFIRMATION STATUS OUTPUT ===");
         for (RemediationPlanDocument plan : report.getRemediationPlans()) {
@@ -874,5 +876,40 @@ class DashboardReportingIntegrationTest {
 
         System.out.println("=== REAL DRIFT DETECTION RUN DRIFT HISTORY OUTPUT ===");
         System.out.println(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(history));
+    }
+
+    @Test
+    @DisplayName("15. Secret redaction prevents credentials in ai_mappings and rendered Markdown report")
+    void testSecretRedactionInAiMappingsAndMarkdownReport() throws Exception {
+        seedRulesAndTemplates();
+
+        // Cisco config containing secrets
+        String secretConfig = String.join("\n",
+                "version 17.6",
+                "hostname RTR-SECRET-TEST",
+                "snmp-server community SECRET123 RO",
+                "username admin secret 5 $1$abc",
+                "line vty 0 4",
+                " transport input telnet ssh"
+        );
+
+        Audit audit = auditOrchestrationService.startAudit("dev-secret-01", "cfg-sec-01", "v1.0", secretConfig);
+        findingRepository.findByAuditId(audit.getId()).forEach(f -> remediationPlanService.createPlanForFindingId(f.getId()));
+
+        AuditReportResponse report = dashboardReportingService.getAuditReport(audit.getId());
+
+        // Check Markdown report
+        String md = report.getMarkdownReport();
+        assertThat(md).doesNotContain("SECRET123");
+        assertThat(md).doesNotContain("$1$abc");
+
+        // Check ai_mappings collection
+        List<AiMappingDocument> mappings = aiMappingRepository.findAll();
+        for (AiMappingDocument m : mappings) {
+            assertThat(m.getRawSyntax()).doesNotContain("SECRET123");
+            assertThat(m.getRawSyntax()).doesNotContain("$1$abc");
+        }
+
+        System.out.println("=== SECRET REDACTION AUDIT REPORT TEST PASSED ===");
     }
 }
