@@ -9,6 +9,7 @@ import com.nexuscomply.cyber.ai.persistence.AiMappingRepository;
 import com.nexuscomply.cyber.ai.service.AiMappingService;
 import com.nexuscomply.cyber.ai.service.AiMappingServiceImpl;
 import com.nexuscomply.cyber.ai.service.DeterministicStubSuggestionProvider;
+import com.nexuscomply.cyber.ai.service.GeminiSuggestionProvider;
 import com.nexuscomply.cyber.ai.service.SuggestionResult;
 import com.nexuscomply.cyber.audit.Audit;
 import com.nexuscomply.cyber.audit.AuditOrchestrationService;
@@ -800,5 +801,48 @@ class AiUnknownSyntaxLoopIntegrationTest {
         System.out.println("=== PARSER READ-ONLY TEST: NO WRITES TO AI_MAPPINGS OR AI_JOBS, USAGE COUNT UNCHANGED ===");
         System.out.println("ai_mappings count: " + aiMappingRepository.count() + " (unchanged), usageCount: " + docAfter.getUsageCount());
     }
+
+    @Test
+    @DisplayName("19. Resilient Gemini Timeout Fallback: Full loop completes audit with GeminiSuggestionProvider")
+    void testEndToEndUnknownSyntaxLoopWithGeminiTimeoutFallback() {
+        // Configure GeminiSuggestionProvider pointing to unreachable endpoint with short timeout
+        GeminiSuggestionProvider geminiProvider = new GeminiSuggestionProvider(
+                suggestionProvider,
+                "test-api-key",
+                "gemini-2.5-flash",
+                1,
+                "gemini",
+                "http://127.0.0.1:45678",
+                null,
+                objectMapper
+        );
+
+        AiMappingService resilientAiService = new AiMappingServiceImpl(aiMappingRepository, aiJobRepository, geminiProvider);
+
+        // 1. Ingest unknown syntax
+        AiMappingDocument recorded = resilientAiService.recordUnknownSyntax("Juniper", "JUNOS", "set system services timeout-telnet enabled");
+        assertThat(recorded).isNotNull();
+        assertThat(recorded.getStatus()).isEqualTo("PENDING_REVIEW");
+
+        // 2. Request suggestion (Gemini connection fails/times out, immediately falls back to stub)
+        AiMappingDocument suggested = resilientAiService.requestSuggestion(recorded.getId());
+        assertThat(suggested.getStatus()).isEqualTo("PENDING_REVIEW");
+        assertThat(suggested.getCanonicalField()).isEqualTo("security.telnet.enabled");
+        assertThat(suggested.getMappedValue()).isEqualTo(true);
+        assertThat(suggested.getSuggestedBy()).isEqualTo("AI");
+
+        // 3. Human approval
+        AiMappingDocument approved = resilientAiService.approve(suggested.getId(), "security-lead");
+        assertThat(approved.getStatus()).isEqualTo("APPROVED");
+
+        // 4. Re-audit completes normally with AuditStatus.COMPLETED
+        String config = String.join("\n",
+                "set system services ssh protocol-version v2",
+                "set system services timeout-telnet enabled"
+        );
+        Audit audit = auditOrchestrationService.startAudit("dev-gemini-fallback-01", "cfg-01", "v1.0", config);
+        assertThat(audit.getStatus()).isEqualTo(AuditStatus.COMPLETED.name());
+    }
 }
+
 

@@ -57,7 +57,7 @@ public class GeminiSuggestionProvider implements SuggestionProvider {
     private volatile int timeoutSeconds;
     private volatile String provider;
     private volatile String baseUrl;
-    private final HttpClient httpClient;
+    private volatile HttpClient httpClient;
     private final ObjectMapper objectMapper;
 
     @Autowired
@@ -135,6 +135,19 @@ public class GeminiSuggestionProvider implements SuggestionProvider {
         } catch (HttpTimeoutException timeoutEx) {
             log.warn("Gemini suggestion timed out after {} seconds for line [{}]. Falling back to DeterministicStubSuggestionProvider.",
                     timeoutSeconds, rawLine);
+            return fallbackDelegate.propose(vendor, platform, rawLine, allowedCanonicalFields);
+        } catch (java.net.ConnectException connectEx) {
+            log.warn("Gemini suggestion connection refused for line [{}]: {}. Falling back to DeterministicStubSuggestionProvider.",
+                    rawLine, connectEx.getMessage());
+            return fallbackDelegate.propose(vendor, platform, rawLine, allowedCanonicalFields);
+        } catch (InterruptedException interruptEx) {
+            log.warn("Gemini suggestion interrupted for line [{}]: {}. Restoring interrupt flag and falling back to DeterministicStubSuggestionProvider.",
+                    rawLine, interruptEx.getMessage());
+            Thread.currentThread().interrupt();
+            return fallbackDelegate.propose(vendor, platform, rawLine, allowedCanonicalFields);
+        } catch (java.io.IOException ioEx) {
+            log.warn("Gemini suggestion I/O failure for line [{}]: {}. Falling back to DeterministicStubSuggestionProvider.",
+                    rawLine, ioEx.getMessage());
             return fallbackDelegate.propose(vendor, platform, rawLine, allowedCanonicalFields);
         } catch (Exception ex) {
             log.warn("Gemini suggestion request failed for line [{}] ({}). Falling back to DeterministicStubSuggestionProvider.",
@@ -381,6 +394,9 @@ public class GeminiSuggestionProvider implements SuggestionProvider {
 
     public void setTimeoutSeconds(int timeoutSeconds) {
         this.timeoutSeconds = timeoutSeconds > 0 ? timeoutSeconds : 10;
+        this.httpClient = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(this.timeoutSeconds))
+                .build();
     }
 
     public String getProvider() {

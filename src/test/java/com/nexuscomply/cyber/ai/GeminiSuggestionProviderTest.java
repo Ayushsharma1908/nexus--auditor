@@ -570,5 +570,90 @@ class GeminiSuggestionProviderTest {
         assertEquals("3", directResult.getMappedValue());
         assertInstanceOf(String.class, directResult.getMappedValue());
     }
+
+    @Test
+    @DisplayName("Exact Timeout Boundary: Client timeout aborts hanging endpoint and immediately returns stub suggestion")
+    void testExactTenSecondTimeoutBoundary() {
+        // Assert default configuration enforces 10-second client timeout
+        GeminiSuggestionProvider defaultProvider = new GeminiSuggestionProvider();
+        assertEquals(10, defaultProvider.getTimeoutSeconds(), "Default timeout must be exactly 10 seconds");
+
+        // Test boundary enforcement with 1-second timeout against 3-second hanging endpoint
+        provider.setTimeoutSeconds(1);
+
+        mockGeminiServer.createContext("/v1beta/models/gemini-2.5-flash:generateContent", exchange -> {
+            try {
+                Thread.sleep(3000);
+            } catch (InterruptedException ignored) {}
+            byte[] bytes = "{}".getBytes(StandardCharsets.UTF_8);
+            exchange.sendResponseHeaders(200, bytes.length);
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(bytes);
+            }
+        });
+
+        long start = System.currentTimeMillis();
+        SuggestionResult result = provider.propose(
+                "Cisco",
+                "IOS-XE",
+                "legacy-telnet allow",
+                CanonicalFieldAllowlist.getAllowedFields()
+        );
+        long elapsed = System.currentTimeMillis() - start;
+
+        assertNotNull(result, "Hanging request must fall back to deterministic stub");
+        assertEquals("security.telnet.enabled", result.getCanonicalField());
+        assertEquals(Boolean.TRUE, result.getMappedValue());
+        assertTrue(elapsed < 2500, "Must abort around configured timeout window without lingering delay");
+    }
+
+    @Test
+    @DisplayName("Connection Refused Fallback: Immediate fallback to stub on unreachable port with zero exception bubble")
+    void testConnectionRefusedFallback() {
+        // Configure unreachable endpoint
+        provider.setBaseUrl("http://127.0.0.1:45678");
+
+        long start = System.currentTimeMillis();
+        SuggestionResult result = provider.propose(
+                "Cisco",
+                "IOS-XE",
+                "insecure-remote telnet",
+                CanonicalFieldAllowlist.getAllowedFields()
+        );
+        long elapsed = System.currentTimeMillis() - start;
+
+        assertNotNull(result, "Connection failure must seamlessly return offline stub proposal");
+        assertEquals("security.telnet.enabled", result.getCanonicalField());
+        assertTrue(elapsed < 2000, "Connection refused must fail-fast without hanging");
+    }
+
+    @Test
+    @DisplayName("AiMappingService Integration: Failing/timing-out Gemini provider records PENDING_REVIEW and allows human approval")
+    void testAiMappingServiceIntegrationWithGeminiFallback() {
+        // Configure provider with unreachable URL
+        provider.setBaseUrl("http://127.0.0.1:45678");
+
+        AiMappingService aiMappingService = new AiMappingServiceImpl(aiMappingRepository, aiJobRepository, provider);
+
+        // 1. Record unknown syntax
+        AiMappingDocument recorded = aiMappingService.recordUnknownSyntax("Juniper", "JUNOS", "set system services custom-telnet 1");
+        assertNotNull(recorded);
+        assertEquals("PENDING_REVIEW", recorded.getStatus());
+
+        // 2. Request suggestion (Gemini connection fails, delegates to fallback stub)
+        AiMappingDocument withFallback = aiMappingService.requestSuggestion(recorded.getId());
+        assertNotNull(withFallback);
+        assertEquals("PENDING_REVIEW", withFallback.getStatus(), "Fallback suggestion must remain strictly PENDING_REVIEW");
+        assertEquals("security.telnet.enabled", withFallback.getCanonicalField());
+        assertEquals(Boolean.TRUE, withFallback.getMappedValue());
+        assertNull(withFallback.getReview().getReviewerId());
+
+        // 3. Human review approval succeeds without regression
+        AiMappingDocument approved = aiMappingService.approve(withFallback.getId(), "security-architect-01");
+        assertEquals("APPROVED", approved.getStatus());
+        assertEquals("security-architect-01", approved.getReview().getReviewerId());
+        assertNotNull(approved.getReview().getReviewedAt());
+    }
 }
+
 
