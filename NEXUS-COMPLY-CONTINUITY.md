@@ -92,6 +92,11 @@ Every task goes through this cycle: Antigravity implements → reports back with
     - Never mutates operational audit collections (`audits`, `findings`, `evidence`, `risk_assessments`, `normalized_configurations`, `drift_events`, `ai_mappings`).
     - Calculates before/after posture, finding delta, risk delta, and classifies changes using the 4-level drift impact precedence (`INCREASED`, `DECREASED`, `MIXED`, `NO_CHANGE`).
     - Optional simulation persistence strictly adheres to `schema1.md` Section 14 (`what_if_simulations` collection).
+23. **Live Google Gemini Brain Integration Architecture (schema1.md Sections 17 & 18, cyberlayer.pdf Section 28):**
+    - The AI Unknown-Syntax Resolution Loop transitions from `DeterministicStubSuggestionProvider` to a live LLM client using Google Gemini (`gemini-1.5-flash` or `gemini-2.5-flash`) via the `SuggestionProvider` interface.
+    - **Absolute Human-in-the-Loop Approval Gate:** Gemini serves strictly as an advisory candidate generator (`SuggestionResult` containing `canonicalField`, `mappedValue`, `confidence`, `reason`). It never auto-approves. All candidate mappings are stored with `status: "PENDING_REVIEW"` and `suggestedBy: "AI"`. Activation into the parser's active vocabulary requires explicit human review (`review.reviewerId`).
+    - **Resilient Fallback & Audit Isolation:** If the Gemini API experiences network timeouts, rate limits, or API errors, the system gracefully falls back to `null` or the offline deterministic stub. In accordance with Decision 20, LLM provider failures never fail or block audit orchestration (`AuditStatus.COMPLETED`).
+    - **Dual-Mode Toggle:** Operates via Spring configuration property (`nexuscomply.ai.provider: gemini` vs `nexuscomply.ai.provider: stub`), allowing full offline deterministic testing in CI/CD while enabling live generative mapping in connected environments.
 
 ---
 
@@ -219,31 +224,41 @@ Every task goes through this cycle: Antigravity implements → reports back with
 | Expanded NIST & ISO Rule Applicability (`NistSp80053RuleSeeder`, `Iso27001RuleSeeder`) | implemented; pending Claude review | Expanded rule applicability in `NistSp80053RuleSeeder.java` and `Iso27001RuleSeeder.java` for all target canonical fields (`logging.syslog`, `logging.localLogging`, `ntp.configured`, `authentication.aaa`, `security.snmp.enabled`, `security.snmp.version`, alongside existing `security.telnet.enabled` and `security.ssh.version`) to all four supported vendors: `applicableVendors` = `["Cisco", "Juniper", "Fortinet", "Palo Alto"]`, `applicablePlatforms` = `["IOS", "IOS-XE", "JUNOS", "FortiOS", "PAN-OS"]`, `applicableOsVersions` = `[]`. CIS benchmarks (`CisCiscoIosXeRuleSeeder.java`) remain strictly Cisco-only (`17.x`). As a result, all 14 NIST and ISO rules now evaluate vendor-neutrally, and only the 7 CIS rules remain vendor-constrained to Cisco. |
 | Multi-Vendor Pipeline Coverage Verification | implemented; pending Claude review | Updated test assertions across non-Cisco pipelines (`JuniperPipelineIntegrationTest`, `FortinetPipelineIntegrationTest`, `PaloAltoPipelineIntegrationTest`, `DashboardReportingIntegrationTest`, `AuditOrchestrationIntegrationTest`, and `AiUnknownSyntaxLoopIntegrationTest`). For Juniper, Fortinet, and Palo Alto devices, applicable controls increased from 4 to 14, and `notApplicable` dropped from 17 to 7 (reconciliation identity holds: `passed + failed + unknown + notApplicable + error == 21`). Juniper baseline audit now evaluates 12 PASS, 2 FAIL, 0 UNKNOWN, 7 NOT_APPLICABLE (score 85.7%); Fortinet baseline audit evaluates 8 PASS, 2 FAIL, 4 UNKNOWN, 7 NOT_APPLICABLE (score 57.1%); Palo Alto XML and set-format audits evaluate 8 PASS, 0 FAIL, 6 UNKNOWN, 7 NOT_APPLICABLE (score 57.1%). Added `testMultiVendorRuleApplicabilityForNistAndIso` in `NistAndIsoCrossFrameworkRuleSeederIntegrationTest`. |
 
+| **Task 2.16 — Schema and Continuity Sync for Gemini Integration** | AWAITING REVIEW | implemented; pending Claude review |
+| Architectural Documentation & Schema Alignment | implemented; pending Claude review | Formally updated `schema1.md` Section 17 (`ai_mappings`) and Section 18 (`ai_jobs`) with architectural notes documenting live LLM provider (Google Gemini `gemini-1.5-flash` / `gemini-2.5-flash`) integration via `SuggestionProvider` while keeping JSON contracts identical. Added Decision 23 in Section 3 documenting the live Gemini transition, immutable human approval gate (`PENDING_REVIEW` -> `APPROVED`), resilient fallback handling, and Spring Profile dual-mode toggle. |
+
+| **Task 2.17 — Live Gemini Integration** | NOT STARTED | not started |
+| Property Configuration & API Key Injection | NOT STARTED | Configure application properties (`nexuscomply.ai.gemini.api-key`, `nexuscomply.ai.gemini.model`, `nexuscomply.ai.provider`) supporting environment variable overrides (`GEMINI_API_KEY`). |
+| `GeminiSuggestionProvider` Implementation | NOT STARTED | Implement live Gemini client using structured JSON prompt/schema targeting `SuggestionResult` (`canonicalField`, `mappedValue`, `confidence`, `reason`). |
+| Error & Fallback Handling | NOT STARTED | Implement fail-safe timeout and exception recovery falling back to offline stub/null, preventing audit interruption. |
+| Spring Profile Dual-Mode Toggle | NOT STARTED | Configure conditional bean activation (`@ConditionalOnProperty`) enabling seamless switching between live Gemini and deterministic offline stub. |
+
 ### Schema Deviations & Conventions (schema1.md Parity)
 1. **`remediation_templates` (schema1.md Sec 15):** Deliberately omitted `controlId` and `ruleId` from MongoDB documents because remediation templates are shared across multiple frameworks (CIS, NIST, ISO) that evaluate the same canonical security fact. Added `canonicalField`, `commandType` (`PLATFORM_GAP`, `DERIVABLE_REGEX`, `REPRESENTATIVE_EXAMPLE`), `confirmationStatus` (`CONFIRMED`, `UNCONFIRMED`), and `gapExplanation`.
 2. **`remediation_plans` (schema1.md Sec 16):** Initial `status` is strictly `PLANNED` (non-approved); initial `validation.status` is `PENDING`. For platform gaps, plans emit a step with `action = "PLATFORM_GAP_NOTICE"` and `command = "NO_COMMAND"`. Command steps in reporting responses are annotated with `[CONFIRMED]` / `[UNCONFIRMED]`.
 3. **`drift_events` (schema1.md Sec 13):** `changes` records canonical security facts using real `CanonicalSecurityModel` paths (e.g. `security.telnet.enabled` rather than schema example `management.telnetEnabled`). Added per-change `classification` (`IMPROVED`, `DEGRADED`, `NO_SECURITY_IMPACT`, `UNKNOWN_IMPACT`). Event-level `impact` supports `INCREASED`, `DECREASED`, `MIXED`, `UNKNOWN`, and `NO_CHANGE` governed by the 4-level precedence hierarchy above.
-4. **`ai_mappings` (schema1.md Sec 17):** Strict 1:1 parity with schema1.md (`_id`, `vendor`, `platform`, `rawSyntax`, `canonicalField`, `mappedValue`, `unit`, `confidence`, `reason`, `status`, `suggestedBy`, `review`, `usageCount`, `createdAt`, `updatedAt`). Credential secrets are sanitized (`SecretSanitizer`) and noise filtered (`SyntaxNoiseFilter`) before persistence.
-5. **`ai_jobs` (schema1.md Sec 18):** Strict 1:1 parity with schema1.md (`_id`, `type`, `status`, `configurationId`, `versionId`, `input`, `result`, `error`, `startedAt`, `completedAt`, `createdBy`, `createdAt`, `updatedAt`).
+4. **`ai_mappings` (schema1.md Sec 17):** Strict 1:1 parity with schema1.md (`_id`, `vendor`, `platform`, `rawSyntax`, `canonicalField`, `mappedValue`, `unit`, `confidence`, `reason`, `status`, `suggestedBy`, `review`, `usageCount`, `createdAt`, `updatedAt`). Credential secrets are sanitized (`SecretSanitizer`) and noise filtered (`SyntaxNoiseFilter`) before persistence. Architecturally documented live Google Gemini integration via `SuggestionProvider` while preserving schema fields.
+5. **`ai_jobs` (schema1.md Sec 18):** Strict 1:1 parity with schema1.md (`_id`, `type`, `status`, `configurationId`, `versionId`, `input`, `result`, `error`, `startedAt`, `completedAt`, `createdBy`, `createdAt`, `updatedAt`). Tracks live LLM operations and fallbacks without schema alterations.
 6. **`what_if_simulations` (schema1.md Sec 14):** Strict 1:1 parity with schema1.md (`_id`, `deviceId`, `baseConfigurationVersionId`, `name`, `description`, `changes`, `status`, `before`, `after`, `affectedControlIds`, `affectedFindingIds`, `createdBy`, `createdAt`, `updatedAt`).
 7. **`reports` (schema1.md Sec 19):** Schema defines `reports` collection for generated export files (PDF/JSON storage metadata). Dashboards, device postures, fleet summaries, and audit reports are computed-on-read from underlying domain collections (`audits`, `findings`, `evidence`, `remediation_plans`, `risk_assessments`, `drift_events`, `ai_mappings`) without persisting intermediate dashboard documents. Device list for fleet summary is derived from distinct `deviceId` values across `audits` and `normalized_configurations` collections.
 
 **If interrupted, last known state (be specific — see instructions at top of file):**
-Tasks 2.4, 2.5, 2.6, 2.7, 2.8, 2.9 (2.9b-2.9f), 2.10a, 2.10b, 2.10c, 2.11/2.11b, 2.12/2.12c, 2.13, 2.14, and 2.15 are implemented; pending Claude review. All tests pass with 0 failures, 0 errors, 0 skipped. Total test count: 232 tests across 29 test suites (Task 2.15 addition: 1 test `testMultiVendorRuleApplicabilityForNistAndIso` in `NistAndIsoCrossFrameworkRuleSeederIntegrationTest`).
+Tasks 2.4, 2.5, 2.6, 2.7, 2.8, 2.9 (2.9b-2.9f), 2.10a, 2.10b, 2.10c, 2.11/2.11b, 2.12/2.12c, 2.13, 2.14, 2.15, and 2.16 are implemented; pending Claude review. Task 2.17 (Live Gemini Integration) is NOT STARTED. All tests pass with 0 failures, 0 errors, 0 skipped. Total test count: 232 tests across 29 test suites.
 
-**Last updated:** 2026-10-07 13:10:00 IST
+**Last updated:** 2026-10-07 14:35:00 IST
 
 ---
 
 ## SECTION 5 — What Comes After the Current Task
 
-Tasks 2.4 (Risk Scoring Engine), 2.5 (Juniper JunOS Parser), 2.6 (Fortinet FortiOS Parser), 2.7 (Palo Alto PAN-OS Parser), 2.8 (Remediation Templates Engine), 2.9 / 2.9b / 2.9c / 2.9d / 2.9e / 2.9f (Drift Detection Engine), 2.10a (Narrow Four-Vendor Rule Coverage), 2.10b (AI Unknown-Syntax Resolution Loop), 2.10c (AI Loop Refinements), 2.11/2.11b (What-If Simulation Engine), 2.12 (Unified Dashboard & Reporting Aggregation), 2.13 (Pre-Demo Hardening & Secret Redaction), 2.14 (End-to-End Demo Script & Report Export), and 2.15 (Expanded Vendor-Neutral Rule Coverage) are implemented; pending Claude review.
+Tasks 2.4 (Risk Scoring Engine), 2.5 (Juniper JunOS Parser), 2.6 (Fortinet FortiOS Parser), 2.7 (Palo Alto PAN-OS Parser), 2.8 (Remediation Templates Engine), 2.9 / 2.9b / 2.9c / 2.9d / 2.9e / 2.9f (Drift Detection Engine), 2.10a (Narrow Four-Vendor Rule Coverage), 2.10b (AI Unknown-Syntax Resolution Loop), 2.10c (AI Loop Refinements), 2.11/2.11b (What-If Simulation Engine), 2.12 (Unified Dashboard & Reporting Aggregation), 2.13 (Pre-Demo Hardening & Secret Redaction), 2.14 (End-to-End Demo Script & Report Export), 2.15 (Expanded Vendor-Neutral Rule Coverage), and 2.16 (Schema and Continuity Sync for Gemini Integration) are implemented; pending Claude review.
+
+Upcoming: Task 2.17 (Live Gemini Integration) — wiring live Google Gemini API client into `SuggestionProvider` with dual-mode Spring toggle and resilient fallback.
 
 Per cyberlayer.pdf Section 33 and project roadmap, backend Cyber Layer service and engine implementation is feature-complete at the Java service layer.
 Remaining components outside Package B scope or for future integration:
 1. REST API Controllers and OpenAPI annotations (except `VendorDetectionController`).
 2. Web UI Frontend (React/Dashboard UI) and PDF binary generation export pipeline.
-3. Live LLM client integration replacing `DeterministicStubSuggestionProvider`.
 
 DO NOT start any further work until Claude review is complete.
 

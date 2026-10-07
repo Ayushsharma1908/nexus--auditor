@@ -931,6 +931,9 @@ Stores human-validated mappings for previously unknown configuration syntax.
 
 AI suggests; human validates; the mapping becomes reusable.
 
+> **Architectural Note (LLM Integration):**
+> This collection interfaces with a live LLM provider (Google Gemini `gemini-1.5-flash` or `gemini-2.5-flash`) via the `SuggestionProvider` interface. The schema fields (`confidence`, `reason`, `status`, `suggestedBy`) remain completely unchanged, as the integration relies on the exact existing JSON contract. Gemini generates candidate suggestions with `suggestedBy: "AI"`, but mappings are strictly saved in `status: "PENDING_REVIEW"` and require explicit human approval (`review.reviewerId`) before reuse.
+
 ## Schema
 
 ```json
@@ -994,6 +997,9 @@ status
 ## Purpose
 
 Tracks asynchronous AI analysis operations.
+
+> **Architectural Note (LLM Integration):**
+> This collection tracks analysis operations executed against the live LLM provider (Google Gemini `gemini-1.5-flash` or `gemini-2.5-flash`) via the `SuggestionProvider` interface. The schema fields (`type`, `status`, `input`, `result`, `error`) remain completely unchanged, tracking operational execution, suggestion counts, and error/timeout status under the exact existing contract.
 
 ## Schema
 
