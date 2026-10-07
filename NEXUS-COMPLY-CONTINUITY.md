@@ -220,9 +220,9 @@ Every task goes through this cycle: Antigravity implements → reports back with
 7. **`reports` (schema1.md Sec 19):** Schema defines `reports` collection for generated export files (PDF/JSON storage metadata). Dashboards, device postures, fleet summaries, and audit reports are computed-on-read from underlying domain collections (`audits`, `findings`, `evidence`, `remediation_plans`, `risk_assessments`, `drift_events`, `ai_mappings`) without persisting intermediate dashboard documents. Device list for fleet summary is derived from distinct `deviceId` values across `audits` and `normalized_configurations` collections.
 
 **If interrupted, last known state (be specific — see instructions at top of file):**
-Tasks 2.4, 2.5, 2.6, 2.7, 2.8, 2.9 (2.9b-2.9f), 2.10a, 2.10b, 2.10c, 2.11/2.11b, 2.12/2.12c, and 2.13 are implemented; pending Claude review. All tests pass with 0 failures, 0 errors, 0 skipped. Total test count: 231 tests across 28 test suites (Task 2.13 additions: 7 in `SecretSanitizerTest`, 2 in `SyntaxNoiseFilterTest`, 1 in `DriftDetectionIntegrationTest` [now 21], 1 in `DashboardReportingIntegrationTest` [now 15]).
+Tasks 2.4, 2.5, 2.6, 2.7, 2.8, 2.9 (2.9b-2.9f), 2.10a, 2.10b, 2.10c, 2.11/2.11b, 2.12/2.12c, and 2.13 are implemented; pending Claude review. All tests pass with 0 failures, 0 errors, 0 skipped. Total test count: 230 tests across 28 test suites (Task 2.13 additions: 7 in `SecretSanitizerTest`, 2 in `SyntaxNoiseFilterTest`, 1 in `DriftDetectionIntegrationTest` [now 21], 1 in `DashboardReportingIntegrationTest` [now 15]).
 
-**Last updated:** 2026-10-07 12:20:00 IST
+**Last updated:** 2026-10-07 12:22:00 IST
 
 ---
 
