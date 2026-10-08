@@ -15,6 +15,7 @@ spring:
   data:
     mongodb:
       uri: ${SPRING_DATA_MONGODB_URI:${MONGODB_URI:mongodb://localhost:27017/nexus_comply}}
+      database: ${SPRING_DATA_MONGODB_DATABASE:${MONGODB_DATABASE:nexus_comply}}
       auto-index-creation: true
 
 # AI Unknown-Syntax Suggestion Provider (Gemini / Stub)
