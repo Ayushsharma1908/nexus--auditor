@@ -18,10 +18,13 @@ import java.util.List;
 @Configuration
 public class CorsConfig implements WebMvcConfigurer {
 
-    @Value("${cors.allowed-origins:http://localhost:*,http://127.0.0.1:*,https://*.vercel.app}")
+    @Value("${cors.allowed-origins:*}")
     private String allowedOrigins;
 
     public List<String> getOriginPatterns() {
+        if ("*".equals(allowedOrigins.trim())) {
+            return List.of("*");
+        }
         return Arrays.stream(allowedOrigins.split(","))
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
