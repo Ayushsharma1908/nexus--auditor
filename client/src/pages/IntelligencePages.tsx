@@ -1562,7 +1562,7 @@ export function Settings() {
             <div>
               <h3>NEXUS-COMPLY</h3>
               <span>Network Assurance & Compliance Engine</span>
-              <small>Build 0.9.4 · SIH26155 · Synthetic data environment</small>
+              <small>Build 0.9.4 · Production environment</small>
             </div>
           </div>
         </Panel>

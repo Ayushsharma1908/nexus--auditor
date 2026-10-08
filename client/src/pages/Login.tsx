@@ -98,7 +98,7 @@ export default function Login() {
           />
           <div className="login-brand-text">
             <div className="login-brand-title">
-              NEXUS-COMPLY <span className="login-brand-badge">SIH26155</span>
+              NEXUS-COMPLY
             </div>
             <div className="login-brand-tagline">
               Empower Your Security Operations, Simplify Compliance!

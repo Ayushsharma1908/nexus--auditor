@@ -261,7 +261,6 @@ export function AppShell({ children }: { children: ReactNode }) {
               />
               <div>
                 <div className="brand-name">NEXUS-COMPLY</div>
-                <div className="brand-id">SIH26155</div>
               </div>
             </div>
             <button
