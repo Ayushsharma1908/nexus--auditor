@@ -26,16 +26,29 @@ async function request<T>(
   path: string,
   init?: RequestInit
 ): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, {
+  const url = `${BASE}${path}`;
+  const res = await fetch(url, {
     headers: { "Content-Type": "application/json", ...init?.headers },
     ...init,
   });
-  const json = await res.json().catch(() => null);
+
+  const text = await res.text().catch(() => "");
+  let json: unknown = null;
+  try {
+    json = text ? JSON.parse(text) : null;
+  } catch {
+    throw new ApiError(
+      res.status,
+      text,
+      `API returned non-JSON response from ${url}. Check if VITE_API_BASE_URL is set to your Render backend URL.`
+    );
+  }
+
   if (!res.ok) {
     throw new ApiError(res.status, json, `API ${res.status}: ${path}`);
   }
   // Unwrap the ApiResponse envelope { data: T }
-  return (json?.data ?? json) as T;
+  return ((json as Record<string, unknown>)?.data ?? json) as T;
 }
 
 // ────────────────────────────────────────────────────────────────
