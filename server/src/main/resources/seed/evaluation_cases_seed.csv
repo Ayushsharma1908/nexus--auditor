@@ -1,0 +1,15 @@
+id,vendor,platform,class,summary,expected_result,fixture_ref
+EV-CISCO-001,Cisco,IOS-XE,GOOD,AAA enabled; SSHv2; Telnet disabled; remote logging enabled; NTP active,PASS,fixtures/cisco-ios-xe-good.cfg
+EV-CISCO-002,Cisco,IOS-XE,BAD,Telnet enabled; AAA absent; remote logging absent; SNMPv1 enabled,FAIL,fixtures/cisco-ios-xe-bad.cfg
+EV-CISCO-003,Cisco,IOS-XE,BAD,SSH enabled but Telnet active on aux port; no remote syslog,FAIL,fixtures/cisco-ios-xe-mixed.cfg
+EV-JUNOS-001,Juniper,Junos,GOOD,SSH enabled; Telnet disabled; syslog configured; RADIUS authentication active,PASS,fixtures/juniper-junos-good.cfg
+EV-JUNOS-002,Juniper,Junos,BAD,Telnet enabled; weak/legacy management exposure; SNMPv1 community present,FAIL,fixtures/juniper-junos-bad.cfg
+EV-JUNOS-003,Juniper,Junos,BAD,"SSH enabled, Telnet disabled, but remote syslog missing",FAIL,fixtures/juniper-junos-mixed.cfg
+EV-FGT-001,Fortinet,FortiOS,GOOD,SSHv1 disabled; controlled admin access; SNMPv1 disabled; syslog enabled,PASS,fixtures/fortinet-fortios-good.cfg
+EV-FGT-002,Fortinet,FortiOS,BAD,SSHv1 enabled; Telnet enabled; SNMPv1 enabled; remote log disabled,FAIL,fixtures/fortinet-fortios-bad.cfg
+EV-FGT-003,Fortinet,FortiOS,BAD,"SSH hardened, but Telnet admin enabled",FAIL,fixtures/fortinet-fortios-mixed.cfg
+EV-PA-001,Palo Alto,PAN-OS,GOOD,Security policy present; syslog forwarding configured; management services restricted,PASS,fixtures/paloalto-panos-good.cfg
+EV-PA-002,Palo Alto,PAN-OS,BAD,Telnet/HTTP management exposed; logging not forwarded,FAIL,fixtures/paloalto-panos-bad.cfg
+EV-PA-003,Palo Alto,PAN-OS,BAD,"SSH enabled, but unencrypted HTTP interface exposed",FAIL,fixtures/paloalto-panos-mixed.cfg
+EV-UNK-001,Cisco,IOS-XE,UNKNOWN,Unrecognized proprietary vendor directive in access line,UNKNOWN,fixtures/unknown-syntax-cisco.cfg
+EV-UNK-002,Juniper,Junos,UNKNOWN,Unrecognized hierarchy statement in system security block,UNKNOWN,fixtures/unknown-syntax-juniper.cfg

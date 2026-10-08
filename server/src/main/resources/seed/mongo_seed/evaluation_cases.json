@@ -1,0 +1,455 @@
+[
+  {
+    "_id": "EV-CISCO-001",
+    "vendor": "Cisco",
+    "platform": "IOS-XE",
+    "caseClass": "GOOD",
+    "summary": "AAA enabled; SSHv2; Telnet disabled; remote logging enabled; NTP active",
+    "expectedResult": "PASS",
+    "status": "VALIDATED",
+    "configurationFixtureRef": "fixtures/cisco-ios-xe-good.cfg",
+    "rawConfigurationFixture": "! Cisco IOS XE Hardened Production Configuration\nhostname edge-router-01\nversion 17.9\nservice password-encryption\nsecurity passwords min-length 14\n!\naaa new-model\naaa authentication login default group tacacs+ local\n!\nip ssh version 2\nip domain-name corp.nexuscomply.local\nno ip http server\nip http secure-server\n!\nlogging host 10.200.1.50\nlogging trap informational\n!\nntp server 10.200.1.1\n!\nbanner motd ^AUTHORIZED USERS ONLY. ALL ACTIVITY MONITORED.^\n!\nline vty 0 4\n transport input ssh\n transport preferred none\n exec-timeout 10 0\nline aux 0\n transport input none\n!\nend",
+    "expectedVendorDetection": "Cisco",
+    "expectedPlatformDetection": "IOS-XE",
+    "expectedParsedFacts": {
+      "hostname": "edge-router-01",
+      "osVersion": "17.9",
+      "sshVersion": 2,
+      "aaaEnabled": true,
+      "httpServer": false,
+      "remoteSyslogHost": "10.200.1.50"
+    },
+    "expectedCanonicalFacts": {
+      "management.ssh.version": 2,
+      "management.ssh.enabled": true,
+      "management.telnet.enabled": false,
+      "management.http.enabled": false,
+      "management.https.enabled": true,
+      "authentication.aaaEnabled": true,
+      "logging.remoteSyslog.enabled": true,
+      "system.ntp.enabled": true,
+      "system.banner.configured": true
+    },
+    "expectedAffectedRuleIds": [
+      "RULE-MGMT-SSH-V2",
+      "RULE-MGMT-TELNET-OFF",
+      "RULE-MGMT-HTTP-OFF",
+      "RULE-AUTH-AAA",
+      "RULE-LOG-REMOTE",
+      "RULE-NTP-ENABLED",
+      "RULE-LOGIN-BANNER",
+      "RULE-MGMT-HTTPS-ON"
+    ],
+    "id": "EV-CISCO-001"
+  },
+  {
+    "_id": "EV-CISCO-002",
+    "vendor": "Cisco",
+    "platform": "IOS-XE",
+    "caseClass": "BAD",
+    "summary": "Telnet enabled; AAA absent; remote logging absent; SNMPv1 enabled",
+    "expectedResult": "FAIL",
+    "status": "VALIDATED",
+    "configurationFixtureRef": "fixtures/cisco-ios-xe-bad.cfg",
+    "rawConfigurationFixture": "! Cisco IOS XE Insecure Baseline Configuration\nhostname legacy-switch-02\nversion 16.9\n!\nno aaa new-model\n!\nip http server\nno ip http secure-server\nsnmp-server community public RO\n!\nline vty 0 4\n transport input telnet\n password cisco\n login\n!\nend",
+    "expectedVendorDetection": "Cisco",
+    "expectedPlatformDetection": "IOS-XE",
+    "expectedParsedFacts": {
+      "hostname": "legacy-switch-02",
+      "osVersion": "16.9",
+      "aaaEnabled": false,
+      "httpServer": true,
+      "snmpCommunity": "public"
+    },
+    "expectedCanonicalFacts": {
+      "management.ssh.enabled": false,
+      "management.telnet.enabled": true,
+      "management.http.enabled": true,
+      "management.https.enabled": false,
+      "authentication.aaaEnabled": false,
+      "logging.remoteSyslog.enabled": false,
+      "monitoring.snmp.v1Enabled": true
+    },
+    "expectedAffectedRuleIds": [
+      "RULE-MGMT-TELNET-OFF",
+      "RULE-MGMT-HTTP-OFF",
+      "RULE-AUTH-AAA",
+      "RULE-LOG-REMOTE",
+      "RULE-SNMP-V1-OFF"
+    ],
+    "id": "EV-CISCO-002"
+  },
+  {
+    "_id": "EV-CISCO-003",
+    "vendor": "Cisco",
+    "platform": "IOS-XE",
+    "caseClass": "BAD",
+    "summary": "SSH enabled but Telnet active on aux port; no remote syslog",
+    "expectedResult": "FAIL",
+    "status": "VALIDATED",
+    "configurationFixtureRef": "fixtures/cisco-ios-xe-mixed.cfg",
+    "rawConfigurationFixture": "! Cisco IOS XE Mixed Hardening Configuration\nhostname dist-router-03\nversion 17.6\naaa new-model\nip ssh version 2\nno ip http server\n!\nline vty 0 4\n transport input ssh\nline aux 0\n transport input telnet\n!\nend",
+    "expectedVendorDetection": "Cisco",
+    "expectedPlatformDetection": "IOS-XE",
+    "expectedParsedFacts": {
+      "hostname": "dist-router-03",
+      "osVersion": "17.6",
+      "sshVersion": 2,
+      "auxTelnet": true
+    },
+    "expectedCanonicalFacts": {
+      "management.ssh.version": 2,
+      "management.ssh.enabled": true,
+      "management.telnet.enabled": true,
+      "management.http.enabled": false,
+      "authentication.aaaEnabled": true,
+      "logging.remoteSyslog.enabled": false
+    },
+    "expectedAffectedRuleIds": [
+      "RULE-MGMT-TELNET-OFF",
+      "RULE-LOG-REMOTE"
+    ],
+    "id": "EV-CISCO-003"
+  },
+  {
+    "id": "EV-JUNOS-001",
+    "vendor": "Juniper",
+    "platform": "Junos",
+    "caseClass": "GOOD",
+    "summary": "SSH enabled; Telnet disabled; syslog configured; RADIUS authentication active",
+    "expectedResult": "PASS",
+    "status": "VALIDATED",
+    "configurationFixtureRef": "fixtures/juniper-junos-good.cfg",
+    "rawConfigurationFixture": "## Juniper Junos Hardened Set Configuration\nset system host-name core-junos-01\nset system services ssh protocol-version v2\ndelete system services telnet\nset system services web-management https\nset system authentication-order [ radius tacplus ]\nset system syslog host 10.200.1.50 any notice\nset system ntp server 10.200.1.1\nset system login message \"AUTHORIZED PERSONNEL ONLY\"\nset system login password minimum-length 14",
+    "expectedVendorDetection": "Juniper",
+    "expectedPlatformDetection": "Junos",
+    "expectedParsedFacts": {
+      "hostname": "core-junos-01",
+      "sshVersion": 2,
+      "telnetDisabled": true,
+      "syslogHost": "10.200.1.50"
+    },
+    "expectedCanonicalFacts": {
+      "management.ssh.version": 2,
+      "management.ssh.enabled": true,
+      "management.telnet.enabled": false,
+      "management.http.enabled": false,
+      "management.https.enabled": true,
+      "authentication.aaaEnabled": true,
+      "logging.remoteSyslog.enabled": true,
+      "system.ntp.enabled": true,
+      "system.banner.configured": true
+    },
+    "expectedAffectedRuleIds": [
+      "RULE-MGMT-SSH-V2",
+      "RULE-MGMT-TELNET-OFF",
+      "RULE-MGMT-HTTP-OFF",
+      "RULE-AUTH-AAA",
+      "RULE-LOG-REMOTE",
+      "RULE-NTP-ENABLED",
+      "RULE-LOGIN-BANNER"
+    ],
+    "_id": "EV-JUNOS-001"
+  },
+  {
+    "_id": "EV-JUNOS-002",
+    "vendor": "Juniper",
+    "platform": "Junos",
+    "caseClass": "BAD",
+    "summary": "Telnet enabled; weak/legacy management exposure; SNMPv1 community present",
+    "expectedResult": "FAIL",
+    "status": "VALIDATED",
+    "configurationFixtureRef": "fixtures/juniper-junos-bad.cfg",
+    "rawConfigurationFixture": "## Juniper Junos Insecure Configuration\nset system host-name branch-junos-02\nset system services telnet\nset system services web-management http\nset snmp community public authorization read-only",
+    "expectedVendorDetection": "Juniper",
+    "expectedPlatformDetection": "Junos",
+    "expectedParsedFacts": {
+      "hostname": "branch-junos-02",
+      "telnetEnabled": true,
+      "httpEnabled": true,
+      "snmpCommunity": "public"
+    },
+    "expectedCanonicalFacts": {
+      "management.telnet.enabled": true,
+      "management.http.enabled": true,
+      "monitoring.snmp.v1Enabled": true,
+      "logging.remoteSyslog.enabled": false,
+      "authentication.aaaEnabled": false
+    },
+    "expectedAffectedRuleIds": [
+      "RULE-MGMT-TELNET-OFF",
+      "RULE-MGMT-HTTP-OFF",
+      "RULE-SNMP-V1-OFF",
+      "RULE-LOG-REMOTE"
+    ],
+    "id": "EV-JUNOS-002"
+  },
+  {
+    "_id": "EV-JUNOS-003",
+    "vendor": "Juniper",
+    "platform": "Junos",
+    "caseClass": "BAD",
+    "summary": "SSH enabled, Telnet disabled, but remote syslog missing",
+    "expectedResult": "FAIL",
+    "status": "VALIDATED",
+    "configurationFixtureRef": "fixtures/juniper-junos-mixed.cfg",
+    "rawConfigurationFixture": "## Juniper Junos Incomplete Hardening\nset system host-name access-junos-03\nset system services ssh protocol-version v2\ndelete system services telnet\nset system ntp server 10.200.1.1",
+    "expectedVendorDetection": "Juniper",
+    "expectedPlatformDetection": "Junos",
+    "expectedParsedFacts": {
+      "hostname": "access-junos-03",
+      "sshVersion": 2,
+      "telnetDisabled": true
+    },
+    "expectedCanonicalFacts": {
+      "management.ssh.version": 2,
+      "management.ssh.enabled": true,
+      "management.telnet.enabled": false,
+      "logging.remoteSyslog.enabled": false
+    },
+    "expectedAffectedRuleIds": [
+      "RULE-LOG-REMOTE"
+    ],
+    "id": "EV-JUNOS-003"
+  },
+  {
+    "_id": "EV-FGT-001",
+    "vendor": "Fortinet",
+    "platform": "FortiOS",
+    "caseClass": "GOOD",
+    "summary": "SSHv1 disabled; controlled admin access; SNMPv1 disabled; syslog enabled",
+    "expectedResult": "PASS",
+    "status": "VALIDATED",
+    "configurationFixtureRef": "fixtures/fortinet-fortios-good.cfg",
+    "rawConfigurationFixture": "# Fortinet FortiOS Hardened Configuration\nconfig system global\n    set hostname \"fgt-core-01\"\n    set admin-ssh-v1 disable\n    set admin-telnet disable\n    set admin-http disable\n    set admin-https-redirect enable\n    set pre-login-banner enable\nend\nconfig log syslogd setting\n    set status enable\n    set server \"10.200.1.50\"\nend\nconfig system snmp community\n    edit 1\n        set name \"mon-corp\"\n        set query-v1-status disable\n        set query-v2c-status enable\n    next\nend\nconfig system ntp\n    set status enable\nend",
+    "expectedVendorDetection": "Fortinet",
+    "expectedPlatformDetection": "FortiOS",
+    "expectedParsedFacts": {
+      "hostname": "fgt-core-01",
+      "adminSshV1": false,
+      "adminTelnet": false,
+      "syslogServer": "10.200.1.50"
+    },
+    "expectedCanonicalFacts": {
+      "management.ssh.sshV1Enabled": false,
+      "management.telnet.enabled": false,
+      "management.http.enabled": false,
+      "management.https.enabled": true,
+      "monitoring.snmp.v1Enabled": false,
+      "logging.remoteSyslog.enabled": true,
+      "system.ntp.enabled": true,
+      "system.banner.configured": true
+    },
+    "expectedAffectedRuleIds": [
+      "RULE-MGMT-TELNET-OFF",
+      "RULE-MGMT-HTTP-OFF",
+      "RULE-SNMP-V1-OFF",
+      "RULE-LOG-REMOTE",
+      "RULE-NTP-ENABLED",
+      "RULE-LOGIN-BANNER"
+    ],
+    "id": "EV-FGT-001"
+  },
+  {
+    "_id": "EV-FGT-002",
+    "vendor": "Fortinet",
+    "platform": "FortiOS",
+    "caseClass": "BAD",
+    "summary": "SSHv1 enabled; Telnet enabled; SNMPv1 enabled; remote log disabled",
+    "expectedResult": "FAIL",
+    "status": "VALIDATED",
+    "configurationFixtureRef": "fixtures/fortinet-fortios-bad.cfg",
+    "rawConfigurationFixture": "# Fortinet FortiOS Insecure Baseline\nconfig system global\n    set hostname \"fgt-branch-02\"\n    set admin-ssh-v1 enable\n    set admin-telnet enable\n    set admin-http enable\nend\nconfig system snmp community\n    edit 1\n        set name \"public\"\n        set query-v1-status enable\n    next\nend",
+    "expectedVendorDetection": "Fortinet",
+    "expectedPlatformDetection": "FortiOS",
+    "expectedParsedFacts": {
+      "hostname": "fgt-branch-02",
+      "adminSshV1": true,
+      "adminTelnet": true,
+      "queryV1": true
+    },
+    "expectedCanonicalFacts": {
+      "management.ssh.sshV1Enabled": true,
+      "management.telnet.enabled": true,
+      "management.http.enabled": true,
+      "monitoring.snmp.v1Enabled": true,
+      "logging.remoteSyslog.enabled": false
+    },
+    "expectedAffectedRuleIds": [
+      "RULE-MGMT-TELNET-OFF",
+      "RULE-MGMT-HTTP-OFF",
+      "RULE-SNMP-V1-OFF",
+      "RULE-LOG-REMOTE"
+    ],
+    "id": "EV-FGT-002"
+  },
+  {
+    "_id": "EV-FGT-003",
+    "vendor": "Fortinet",
+    "platform": "FortiOS",
+    "caseClass": "BAD",
+    "summary": "SSH hardened, but Telnet admin enabled",
+    "expectedResult": "FAIL",
+    "status": "VALIDATED",
+    "configurationFixtureRef": "fixtures/fortinet-fortios-mixed.cfg",
+    "rawConfigurationFixture": "# Fortinet FortiOS Mixed Configuration\nconfig system global\n    set hostname \"fgt-edge-03\"\n    set admin-ssh-v1 disable\n    set admin-telnet enable\n    set admin-http disable\nend",
+    "expectedVendorDetection": "Fortinet",
+    "expectedPlatformDetection": "FortiOS",
+    "expectedParsedFacts": {
+      "hostname": "fgt-edge-03",
+      "adminSshV1": false,
+      "adminTelnet": true
+    },
+    "expectedCanonicalFacts": {
+      "management.ssh.sshV1Enabled": false,
+      "management.telnet.enabled": true,
+      "management.http.enabled": false,
+      "logging.remoteSyslog.enabled": false
+    },
+    "expectedAffectedRuleIds": [
+      "RULE-MGMT-TELNET-OFF",
+      "RULE-LOG-REMOTE"
+    ],
+    "id": "EV-FGT-003"
+  },
+  {
+    "_id": "EV-PA-001",
+    "vendor": "Palo Alto",
+    "platform": "PAN-OS",
+    "caseClass": "GOOD",
+    "summary": "Security policy present; syslog forwarding configured; management services restricted",
+    "expectedResult": "PASS",
+    "status": "VALIDATED",
+    "configurationFixtureRef": "fixtures/paloalto-panos-good.cfg",
+    "rawConfigurationFixture": "set deviceconfig system hostname pa-fw-01\nset network profiles interface-management-profile mgmt-secure ssh yes https yes ping no telnet no http no\nset shared log-settings syslog Syslog-Collector server 10.200.1.50\nset deviceconfig system ntp-server primary 10.200.1.1\nset deviceconfig system login-banner \"RESTRICTED ACCESS ONLY\"\nset rulebase security rules Corp-Outbound log-end yes",
+    "expectedVendorDetection": "Palo Alto",
+    "expectedPlatformDetection": "PAN-OS",
+    "expectedParsedFacts": {
+      "hostname": "pa-fw-01",
+      "profileSsh": true,
+      "profileTelnet": false,
+      "profileHttp": false,
+      "syslogServer": "10.200.1.50"
+    },
+    "expectedCanonicalFacts": {
+      "management.ssh.enabled": true,
+      "management.telnet.enabled": false,
+      "management.http.enabled": false,
+      "management.https.enabled": true,
+      "logging.remoteSyslog.enabled": true,
+      "system.ntp.enabled": true,
+      "system.banner.configured": true,
+      "firewall.securityPolicy.enabled": true
+    },
+    "expectedAffectedRuleIds": [
+      "RULE-MGMT-TELNET-OFF",
+      "RULE-MGMT-HTTP-OFF",
+      "RULE-LOG-REMOTE",
+      "RULE-NTP-ENABLED",
+      "RULE-LOGIN-BANNER",
+      "RULE-MGMT-HTTPS-ON"
+    ],
+    "id": "EV-PA-001"
+  },
+  {
+    "_id": "EV-PA-002",
+    "vendor": "Palo Alto",
+    "platform": "PAN-OS",
+    "caseClass": "BAD",
+    "summary": "Telnet/HTTP management exposed; logging not forwarded",
+    "expectedResult": "FAIL",
+    "status": "VALIDATED",
+    "configurationFixtureRef": "fixtures/paloalto-panos-bad.cfg",
+    "rawConfigurationFixture": "set deviceconfig system hostname pa-fw-legacy-02\nset network profiles interface-management-profile mgmt-insecure telnet yes http yes ssh no https no",
+    "expectedVendorDetection": "Palo Alto",
+    "expectedPlatformDetection": "PAN-OS",
+    "expectedParsedFacts": {
+      "hostname": "pa-fw-legacy-02",
+      "profileTelnet": true,
+      "profileHttp": true
+    },
+    "expectedCanonicalFacts": {
+      "management.ssh.enabled": false,
+      "management.telnet.enabled": true,
+      "management.http.enabled": true,
+      "logging.remoteSyslog.enabled": false
+    },
+    "expectedAffectedRuleIds": [
+      "RULE-MGMT-TELNET-OFF",
+      "RULE-MGMT-HTTP-OFF",
+      "RULE-LOG-REMOTE"
+    ],
+    "id": "EV-PA-002"
+  },
+  {
+    "_id": "EV-PA-003",
+    "vendor": "Palo Alto",
+    "platform": "PAN-OS",
+    "caseClass": "BAD",
+    "summary": "SSH enabled, but unencrypted HTTP interface exposed",
+    "expectedResult": "FAIL",
+    "status": "VALIDATED",
+    "configurationFixtureRef": "fixtures/paloalto-panos-mixed.cfg",
+    "rawConfigurationFixture": "set deviceconfig system hostname pa-fw-edge-03\nset network profiles interface-management-profile mgmt-partial ssh yes http yes telnet no https yes",
+    "expectedVendorDetection": "Palo Alto",
+    "expectedPlatformDetection": "PAN-OS",
+    "expectedParsedFacts": {
+      "hostname": "pa-fw-edge-03",
+      "profileSsh": true,
+      "profileHttp": true
+    },
+    "expectedCanonicalFacts": {
+      "management.ssh.enabled": true,
+      "management.http.enabled": true,
+      "management.telnet.enabled": false
+    },
+    "expectedAffectedRuleIds": [
+      "RULE-MGMT-HTTP-OFF"
+    ],
+    "id": "EV-PA-003"
+  },
+  {
+    "_id": "EV-UNK-001",
+    "vendor": "Cisco",
+    "platform": "IOS-XE",
+    "caseClass": "UNKNOWN",
+    "summary": "Unrecognized proprietary vendor directive in access line",
+    "expectedResult": "UNKNOWN",
+    "status": "VALIDATED",
+    "configurationFixtureRef": "fixtures/unknown-syntax-cisco.cfg",
+    "rawConfigurationFixture": "! Cisco IOS XE Unknown Directive Test Fixture\nhostname unk-cisco-01\nline vty 0 4\n custom-vendor-security-mode experimental-quantum-auth\n transport input unknown-protocol-xyz\n!",
+    "expectedVendorDetection": "Cisco",
+    "expectedPlatformDetection": "IOS-XE",
+    "expectedParsedFacts": {
+      "unrecognizedTokens": [
+        "experimental-quantum-auth",
+        "unknown-protocol-xyz"
+      ]
+    },
+    "expectedCanonicalFacts": {},
+    "expectedAffectedRuleIds": [],
+    "id": "EV-UNK-001"
+  },
+  {
+    "_id": "EV-UNK-002",
+    "vendor": "Juniper",
+    "platform": "Junos",
+    "caseClass": "UNKNOWN",
+    "summary": "Unrecognized hierarchy statement in system security block",
+    "expectedResult": "UNKNOWN",
+    "status": "VALIDATED",
+    "configurationFixtureRef": "fixtures/unknown-syntax-juniper.cfg",
+    "rawConfigurationFixture": "## Juniper Junos Unknown Hierarchy Test Fixture\nset system security alien-auth-engine activate\nset system services proprietary-telemetry port 99999",
+    "expectedVendorDetection": "Juniper",
+    "expectedPlatformDetection": "Junos",
+    "expectedParsedFacts": {
+      "unrecognizedStatements": [
+        "alien-auth-engine",
+        "proprietary-telemetry"
+      ]
+    },
+    "expectedCanonicalFacts": {},
+    "expectedAffectedRuleIds": [],
+    "id": "EV-UNK-002"
+  }
+]

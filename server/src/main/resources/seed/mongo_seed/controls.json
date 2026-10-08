@@ -1,0 +1,693 @@
+[
+  {
+    "id": "nist-ac-2",
+    "frameworkId": "FW-NIST-800-53",
+    "controlId": "AC-2",
+    "controlCode": "AC-2",
+    "title": "Account Management",
+    "description": "Manage information system accounts, group memberships, and authorization tokens.",
+    "family": "ACCESS_CONTROL",
+    "category": "ACCESS_CONTROL",
+    "version": "Rev 5",
+    "severity": "HIGH",
+    "remediationGuidance": "Establish automated account management and disable inactive administrative sessions.",
+    "sourceReference": "NIST SP 800-53 Rev 5 Section AC-2",
+    "sourceUrl": "https://csrc.nist.gov/projects/risk-management/sp800-53-controls/downloads",
+    "status": "ACTIVE",
+    "provenance": "Official NIST SP 800-53 Revision 5 public catalog",
+    "ruleIds": [
+      "RULE-AUTH-AAA"
+    ]
+  },
+  {
+    "id": "nist-ac-3",
+    "frameworkId": "FW-NIST-800-53",
+    "controlId": "AC-3",
+    "controlCode": "AC-3",
+    "title": "Access Enforcement",
+    "description": "Enforce approved authorizations for logical access to information and system resources.",
+    "family": "ACCESS_CONTROL",
+    "category": "ACCESS_CONTROL",
+    "version": "Rev 5",
+    "severity": "HIGH",
+    "remediationGuidance": "Configure role-based administrative access and strict management interface ACLs.",
+    "sourceReference": "NIST SP 800-53 Rev 5 Section AC-3",
+    "sourceUrl": "https://csrc.nist.gov/projects/risk-management/sp800-53-controls/downloads",
+    "status": "ACTIVE",
+    "provenance": "Official NIST SP 800-53 Revision 5 public catalog",
+    "ruleIds": [
+      "RULE-AUTH-AAA"
+    ]
+  },
+  {
+    "id": "nist-ac-8",
+    "frameworkId": "FW-NIST-800-53",
+    "controlId": "AC-8",
+    "controlCode": "AC-8",
+    "title": "System Use Notification",
+    "description": "Display an approved system use notification message or banner before granting access to the system.",
+    "family": "ACCESS_CONTROL",
+    "category": "ACCESS_CONTROL",
+    "version": "Rev 5",
+    "severity": "LOW",
+    "remediationGuidance": "Configure login banner motd or system login message with authorized usage statements.",
+    "sourceReference": "NIST SP 800-53 Rev 5 Section AC-8",
+    "sourceUrl": "https://csrc.nist.gov/projects/risk-management/sp800-53-controls/downloads",
+    "status": "ACTIVE",
+    "provenance": "Official NIST SP 800-53 Revision 5 public catalog",
+    "ruleIds": [
+      "RULE-LOGIN-BANNER"
+    ]
+  },
+  {
+    "id": "nist-ac-17",
+    "frameworkId": "FW-NIST-800-53",
+    "controlId": "AC-17",
+    "controlCode": "AC-17",
+    "title": "Remote Access Management",
+    "description": "Authorize and monitor remote access connections using cryptographic mechanisms and secure protocols.",
+    "family": "ACCESS_CONTROL",
+    "category": "ACCESS_CONTROL",
+    "version": "Rev 5",
+    "severity": "HIGH",
+    "remediationGuidance": "Enforce SSH v2 with cryptographic key exchange and terminate unencrypted remote channels like Telnet.",
+    "sourceReference": "NIST SP 800-53 Rev 5 Section AC-17",
+    "sourceUrl": "https://csrc.nist.gov/projects/risk-management/sp800-53-controls/downloads",
+    "status": "ACTIVE",
+    "provenance": "Official NIST SP 800-53 Revision 5 public catalog",
+    "ruleIds": [
+      "RULE-MGMT-SSH-V2",
+      "RULE-MGMT-TELNET-OFF"
+    ]
+  },
+  {
+    "id": "nist-au-2",
+    "frameworkId": "FW-NIST-800-53",
+    "controlId": "AU-2",
+    "controlCode": "AU-2",
+    "title": "Event Logging",
+    "description": "Identify system events that the system is capable of logging in support of the audit function.",
+    "family": "AUDIT_AND_ACCOUNTABILITY",
+    "category": "AUDIT_AND_ACCOUNTABILITY",
+    "version": "Rev 5",
+    "severity": "MEDIUM",
+    "remediationGuidance": "Enable audit logging for configuration changes, administrative sessions, and access failures.",
+    "sourceReference": "NIST SP 800-53 Rev 5 Section AU-2",
+    "sourceUrl": "https://csrc.nist.gov/projects/risk-management/sp800-53-controls/downloads",
+    "status": "ACTIVE",
+    "provenance": "Official NIST SP 800-53 Revision 5 public catalog",
+    "ruleIds": [
+      "RULE-LOG-REMOTE"
+    ]
+  },
+  {
+    "id": "nist-au-8",
+    "frameworkId": "FW-NIST-800-53",
+    "controlId": "AU-8",
+    "controlCode": "AU-8",
+    "title": "Time Stamps",
+    "description": "Use internal system clocks to generate time stamps for audit records synchronized with authoritative time sources.",
+    "family": "AUDIT_AND_ACCOUNTABILITY",
+    "category": "AUDIT_AND_ACCOUNTABILITY",
+    "version": "Rev 5",
+    "severity": "MEDIUM",
+    "remediationGuidance": "Configure Network Time Protocol (NTP) with authenticated synchronization to trusted servers.",
+    "sourceReference": "NIST SP 800-53 Rev 5 Section AU-8",
+    "sourceUrl": "https://csrc.nist.gov/projects/risk-management/sp800-53-controls/downloads",
+    "status": "ACTIVE",
+    "provenance": "Official NIST SP 800-53 Revision 5 public catalog",
+    "ruleIds": [
+      "RULE-NTP-ENABLED"
+    ]
+  },
+  {
+    "id": "nist-au-12",
+    "frameworkId": "FW-NIST-800-53",
+    "controlId": "AU-12",
+    "controlCode": "AU-12",
+    "title": "Audit Record Generation",
+    "description": "Audit system activities and forward audit records to an independent centralized logging repository.",
+    "family": "AUDIT_AND_ACCOUNTABILITY",
+    "category": "AUDIT_AND_ACCOUNTABILITY",
+    "version": "Rev 5",
+    "severity": "MEDIUM",
+    "remediationGuidance": "Configure logging host forwarding using syslog to a dedicated centralized SIEM collector.",
+    "sourceReference": "NIST SP 800-53 Rev 5 Section AU-12",
+    "sourceUrl": "https://csrc.nist.gov/projects/risk-management/sp800-53-controls/downloads",
+    "status": "ACTIVE",
+    "provenance": "Official NIST SP 800-53 Revision 5 public catalog",
+    "ruleIds": [
+      "RULE-LOG-REMOTE"
+    ]
+  },
+  {
+    "id": "nist-cm-6",
+    "frameworkId": "FW-NIST-800-53",
+    "controlId": "CM-6",
+    "controlCode": "CM-6",
+    "title": "Configuration Settings",
+    "description": "Establish and document configuration settings for IT components using security configuration checklists.",
+    "family": "CONFIGURATION_MANAGEMENT",
+    "category": "CONFIGURATION_MANAGEMENT",
+    "version": "Rev 5",
+    "severity": "HIGH",
+    "remediationGuidance": "Apply validated vendor hardening profiles across all managed network devices.",
+    "sourceReference": "NIST SP 800-53 Rev 5 Section CM-6",
+    "sourceUrl": "https://csrc.nist.gov/projects/risk-management/sp800-53-controls/downloads",
+    "status": "ACTIVE",
+    "provenance": "Official NIST SP 800-53 Revision 5 public catalog",
+    "ruleIds": [
+      "RULE-MGMT-SSH-V2",
+      "RULE-MGMT-HTTP-OFF"
+    ]
+  },
+  {
+    "id": "nist-cm-7",
+    "frameworkId": "FW-NIST-800-53",
+    "controlId": "CM-7",
+    "controlCode": "CM-7",
+    "title": "Least Functionality",
+    "description": "Configure systems to provide only essential capabilities and prohibit or restrict unneeded ports and protocols.",
+    "family": "CONFIGURATION_MANAGEMENT",
+    "category": "CONFIGURATION_MANAGEMENT",
+    "version": "Rev 5",
+    "severity": "HIGH",
+    "remediationGuidance": "Disable unencrypted management protocols including Telnet, HTTP, and SNMPv1.",
+    "sourceReference": "NIST SP 800-53 Rev 5 Section CM-7",
+    "sourceUrl": "https://csrc.nist.gov/projects/risk-management/sp800-53-controls/downloads",
+    "status": "ACTIVE",
+    "provenance": "Official NIST SP 800-53 Revision 5 public catalog",
+    "ruleIds": [
+      "RULE-MGMT-TELNET-OFF",
+      "RULE-MGMT-HTTP-OFF",
+      "RULE-SNMP-V1-OFF"
+    ]
+  },
+  {
+    "id": "nist-ia-2",
+    "frameworkId": "FW-NIST-800-53",
+    "controlId": "IA-2",
+    "controlCode": "IA-2",
+    "title": "Identification and Authentication",
+    "description": "Uniquely identify and authenticate organizational users and processes before system access.",
+    "family": "IDENTIFICATION_AND_AUTHENTICATION",
+    "category": "IDENTIFICATION_AND_AUTHENTICATION",
+    "version": "Rev 5",
+    "severity": "HIGH",
+    "remediationGuidance": "Enable centralized AAA (RADIUS or TACACS+) and eliminate shared or default credentials.",
+    "sourceReference": "NIST SP 800-53 Rev 5 Section IA-2",
+    "sourceUrl": "https://csrc.nist.gov/projects/risk-management/sp800-53-controls/downloads",
+    "status": "ACTIVE",
+    "provenance": "Official NIST SP 800-53 Revision 5 public catalog",
+    "ruleIds": [
+      "RULE-AUTH-AAA"
+    ]
+  },
+  {
+    "id": "nist-ia-5",
+    "frameworkId": "FW-NIST-800-53",
+    "controlId": "IA-5",
+    "controlCode": "IA-5",
+    "title": "Authenticator Management",
+    "description": "Manage system authenticators including passwords, keys, and certificates with minimum complexity standards.",
+    "family": "IDENTIFICATION_AND_AUTHENTICATION",
+    "category": "IDENTIFICATION_AND_AUTHENTICATION",
+    "version": "Rev 5",
+    "severity": "MEDIUM",
+    "remediationGuidance": "Enforce password minimum length of 14 characters and strong password hashing.",
+    "sourceReference": "NIST SP 800-53 Rev 5 Section IA-5",
+    "sourceUrl": "https://csrc.nist.gov/projects/risk-management/sp800-53-controls/downloads",
+    "status": "ACTIVE",
+    "provenance": "Official NIST SP 800-53 Revision 5 public catalog",
+    "ruleIds": [
+      "RULE-PASS-MIN-LEN"
+    ]
+  },
+  {
+    "id": "nist-sc-7",
+    "frameworkId": "FW-NIST-800-53",
+    "controlId": "SC-7",
+    "controlCode": "SC-7",
+    "title": "Boundary Protection",
+    "description": "Monitor and control communications at external boundaries and key internal boundaries.",
+    "family": "SYSTEM_AND_COMMUNICATIONS_PROTECTION",
+    "category": "SYSTEM_AND_COMMUNICATIONS_PROTECTION",
+    "version": "Rev 5",
+    "severity": "HIGH",
+    "remediationGuidance": "Enforce firewall access control policies and restrict management services to trusted subnets.",
+    "sourceReference": "NIST SP 800-53 Rev 5 Section SC-7",
+    "sourceUrl": "https://csrc.nist.gov/projects/risk-management/sp800-53-controls/downloads",
+    "status": "ACTIVE",
+    "provenance": "Official NIST SP 800-53 Revision 5 public catalog",
+    "ruleIds": [
+      "RULE-MGMT-SSH-V2"
+    ]
+  },
+  {
+    "id": "nist-sc-8",
+    "frameworkId": "FW-NIST-800-53",
+    "controlId": "SC-8",
+    "controlCode": "SC-8",
+    "title": "Transmission Confidentiality and Integrity",
+    "description": "Protect the confidentiality and integrity of transmitted information using cryptography.",
+    "family": "SYSTEM_AND_COMMUNICATIONS_PROTECTION",
+    "category": "SYSTEM_AND_COMMUNICATIONS_PROTECTION",
+    "version": "Rev 5",
+    "severity": "HIGH",
+    "remediationGuidance": "Enforce TLS/HTTPS for web management and SSHv2 for terminal access.",
+    "sourceReference": "NIST SP 800-53 Rev 5 Section SC-8",
+    "sourceUrl": "https://csrc.nist.gov/projects/risk-management/sp800-53-controls/downloads",
+    "status": "ACTIVE",
+    "provenance": "Official NIST SP 800-53 Revision 5 public catalog",
+    "ruleIds": [
+      "RULE-MGMT-HTTPS-ON",
+      "RULE-MGMT-HTTP-OFF"
+    ]
+  },
+  {
+    "id": "nist-sc-13",
+    "frameworkId": "FW-NIST-800-53",
+    "controlId": "SC-13",
+    "controlCode": "SC-13",
+    "title": "Cryptographic Protection",
+    "description": "Implement cryptographic modules in accordance with applicable federal laws and FIPS standards.",
+    "family": "SYSTEM_AND_COMMUNICATIONS_PROTECTION",
+    "category": "SYSTEM_AND_COMMUNICATIONS_PROTECTION",
+    "version": "Rev 5",
+    "severity": "HIGH",
+    "remediationGuidance": "Utilize FIPS-approved ciphers and disable legacy broken cryptography.",
+    "sourceReference": "NIST SP 800-53 Rev 5 Section SC-13",
+    "sourceUrl": "https://csrc.nist.gov/projects/risk-management/sp800-53-controls/downloads",
+    "status": "ACTIVE",
+    "provenance": "Official NIST SP 800-53 Revision 5 public catalog",
+    "ruleIds": [
+      "RULE-MGMT-SSH-V2"
+    ]
+  },
+  {
+    "id": "stig-net-0400",
+    "frameworkId": "FW-STIG",
+    "controlId": "V-220527",
+    "controlCode": "NET-0400",
+    "title": "Enforce SSHv2 Remote Management",
+    "description": "The network device must use SSHv2 to protect the confidentiality and integrity of remote CLI sessions.",
+    "family": "REMOTE_ACCESS",
+    "category": "REMOTE_ACCESS",
+    "version": "Release 5",
+    "severity": "HIGH",
+    "remediationGuidance": "Configure 'ip ssh version 2' and disable unencrypted terminal protocols.",
+    "sourceReference": "DISA Network Device Management SRG NET-0400 / V-220527",
+    "sourceUrl": "https://www.cyber.mil/stigs/downloads/",
+    "status": "ACTIVE",
+    "provenance": "DISA DoD Cyber Exchange public machine-readable SRG",
+    "ruleIds": [
+      "RULE-MGMT-SSH-V2"
+    ]
+  },
+  {
+    "id": "stig-net-0410",
+    "frameworkId": "FW-STIG",
+    "controlId": "V-220528",
+    "controlCode": "NET-0410",
+    "title": "Disable Telnet Protocol",
+    "description": "The network device must not operate unencrypted remote access services including Telnet.",
+    "family": "REMOTE_ACCESS",
+    "category": "REMOTE_ACCESS",
+    "version": "Release 5",
+    "severity": "HIGH",
+    "remediationGuidance": "Disable Telnet on all VTY and AUX lines.",
+    "sourceReference": "DISA Network Device Management SRG NET-0410 / V-220528",
+    "sourceUrl": "https://www.cyber.mil/stigs/downloads/",
+    "status": "ACTIVE",
+    "provenance": "DISA DoD Cyber Exchange public machine-readable SRG",
+    "ruleIds": [
+      "RULE-MGMT-TELNET-OFF"
+    ]
+  },
+  {
+    "id": "stig-net-0420",
+    "frameworkId": "FW-STIG",
+    "controlId": "V-220529",
+    "controlCode": "NET-0420",
+    "title": "Disable Unencrypted HTTP Management",
+    "description": "The network device must disable unencrypted HTTP web server administration.",
+    "family": "REMOTE_ACCESS",
+    "category": "REMOTE_ACCESS",
+    "version": "Release 5",
+    "severity": "HIGH",
+    "remediationGuidance": "Configure 'no ip http server' and enforce HTTPS with TLS 1.2+.",
+    "sourceReference": "DISA Network Device Management SRG NET-0420 / V-220529",
+    "sourceUrl": "https://www.cyber.mil/stigs/downloads/",
+    "status": "ACTIVE",
+    "provenance": "DISA DoD Cyber Exchange public machine-readable SRG",
+    "ruleIds": [
+      "RULE-MGMT-HTTP-OFF"
+    ]
+  },
+  {
+    "id": "stig-net-0500",
+    "frameworkId": "FW-STIG",
+    "controlId": "V-220530",
+    "controlCode": "NET-0500",
+    "title": "Enforce Centralized AAA Authentication",
+    "description": "The network device must authenticate administrative users via a centralized AAA server (TACACS+ or RADIUS).",
+    "family": "AUTHENTICATION",
+    "category": "AUTHENTICATION",
+    "version": "Release 5",
+    "severity": "HIGH",
+    "remediationGuidance": "Enable AAA new-model and point default login groups to corporate TACACS+/RADIUS clusters.",
+    "sourceReference": "DISA Network Device Management SRG NET-0500 / V-220530",
+    "sourceUrl": "https://www.cyber.mil/stigs/downloads/",
+    "status": "ACTIVE",
+    "provenance": "DISA DoD Cyber Exchange public machine-readable SRG",
+    "ruleIds": [
+      "RULE-AUTH-AAA"
+    ]
+  },
+  {
+    "id": "stig-net-0600",
+    "frameworkId": "FW-STIG",
+    "controlId": "V-220531",
+    "controlCode": "NET-0600",
+    "title": "Forward Syslog to Central Collector",
+    "description": "The network device must forward audit log events to a central logging facility.",
+    "family": "AUDIT_LOGGING",
+    "category": "AUDIT_LOGGING",
+    "version": "Release 5",
+    "severity": "MEDIUM",
+    "remediationGuidance": "Specify remote logging host IP with informational logging trap.",
+    "sourceReference": "DISA Network Device Management SRG NET-0600 / V-220531",
+    "sourceUrl": "https://www.cyber.mil/stigs/downloads/",
+    "status": "ACTIVE",
+    "provenance": "DISA DoD Cyber Exchange public machine-readable SRG",
+    "ruleIds": [
+      "RULE-LOG-REMOTE"
+    ]
+  },
+  {
+    "id": "stig-net-0700",
+    "frameworkId": "FW-STIG",
+    "controlId": "V-220532",
+    "controlCode": "NET-0700",
+    "title": "Disable SNMPv1 Unencrypted Access",
+    "description": "The network device must not use SNMPv1 or unencrypted read-write community strings.",
+    "family": "SYSTEM_MANAGEMENT",
+    "category": "SYSTEM_MANAGEMENT",
+    "version": "Release 5",
+    "severity": "MEDIUM",
+    "remediationGuidance": "Disable SNMPv1/v2c communities and migrate to SNMPv3 with authPriv encryption.",
+    "sourceReference": "DISA Network Device Management SRG NET-0700 / V-220532",
+    "sourceUrl": "https://www.cyber.mil/stigs/downloads/",
+    "status": "ACTIVE",
+    "provenance": "DISA DoD Cyber Exchange public machine-readable SRG",
+    "ruleIds": [
+      "RULE-SNMP-V1-OFF"
+    ]
+  },
+  {
+    "id": "stig-net-0800",
+    "frameworkId": "FW-STIG",
+    "controlId": "V-220533",
+    "controlCode": "NET-0800",
+    "title": "Synchronize Time with Authoritative NTP",
+    "description": "The network device must synchronize internal system clocks using authenticated NTP.",
+    "family": "AUDIT_LOGGING",
+    "category": "AUDIT_LOGGING",
+    "version": "Release 5",
+    "severity": "MEDIUM",
+    "remediationGuidance": "Configure redundant authenticated NTP servers.",
+    "sourceReference": "DISA Network Device Management SRG NET-0800 / V-220533",
+    "sourceUrl": "https://www.cyber.mil/stigs/downloads/",
+    "status": "ACTIVE",
+    "provenance": "DISA DoD Cyber Exchange public machine-readable SRG",
+    "ruleIds": [
+      "RULE-NTP-ENABLED"
+    ]
+  },
+  {
+    "id": "stig-net-0900",
+    "frameworkId": "FW-STIG",
+    "controlId": "V-220534",
+    "controlCode": "NET-0900",
+    "title": "Display DoD Advisory Warning Banner",
+    "description": "The network device must display the approved standard DoD logon advisory banner prior to logon.",
+    "family": "SYSTEM_MANAGEMENT",
+    "category": "SYSTEM_MANAGEMENT",
+    "version": "Release 5",
+    "severity": "LOW",
+    "remediationGuidance": "Configure 'banner motd' with authorized usage warning text.",
+    "sourceReference": "DISA Network Device Management SRG NET-0900 / V-220534",
+    "sourceUrl": "https://www.cyber.mil/stigs/downloads/",
+    "status": "ACTIVE",
+    "provenance": "DISA DoD Cyber Exchange public machine-readable SRG",
+    "ruleIds": [
+      "RULE-LOGIN-BANNER"
+    ]
+  },
+  {
+    "id": "cis-1-1-1",
+    "frameworkId": "FW-CIS",
+    "controlId": "1.1.1",
+    "controlCode": "1.1.1",
+    "title": "Ensure SSH Version 2 is enabled",
+    "description": "Disables unencrypted remote administration protocols and mandates SSH version 2.",
+    "family": "ACCESS_CONTROL",
+    "category": "ACCESS_CONTROL",
+    "version": "v2.2.1",
+    "severity": "HIGH",
+    "remediationGuidance": "Configure 'transport input ssh' and 'ip ssh version 2'.",
+    "sourceReference": "CIS Cisco IOS XE 17.x Benchmark v2.2.1 Section 1.1.1",
+    "sourceUrl": "https://www.cisecurity.org/cis-benchmarks",
+    "status": "ACTIVE",
+    "provenance": "Derived from CIS Benchmark Section 1.1.1 hardening recommendations",
+    "ruleIds": [
+      "RULE-MGMT-SSH-V2"
+    ]
+  },
+  {
+    "id": "cis-1-1-2",
+    "frameworkId": "FW-CIS",
+    "controlId": "1.1.2",
+    "controlCode": "1.1.2",
+    "title": "Ensure Telnet service is disabled",
+    "description": "Prohibits plaintext remote access across network interfaces to protect credentials.",
+    "family": "ACCESS_CONTROL",
+    "category": "ACCESS_CONTROL",
+    "version": "v2.2.1",
+    "severity": "HIGH",
+    "remediationGuidance": "Disable telnet under line vty and line aux.",
+    "sourceReference": "CIS Cisco IOS XE 17.x Benchmark v2.2.1 Section 1.1.2",
+    "sourceUrl": "https://www.cisecurity.org/cis-benchmarks",
+    "status": "ACTIVE",
+    "provenance": "Derived from CIS Benchmark Section 1.1.2 hardening recommendations",
+    "ruleIds": [
+      "RULE-MGMT-TELNET-OFF"
+    ]
+  },
+  {
+    "id": "cis-1-1-3",
+    "frameworkId": "FW-CIS",
+    "controlId": "1.1.3",
+    "controlCode": "1.1.3",
+    "title": "Ensure HTTP server is disabled",
+    "description": "Disables unencrypted web server administration across management ports.",
+    "family": "MANAGEMENT_SERVICES",
+    "category": "MANAGEMENT_SERVICES",
+    "version": "v2.2.1",
+    "severity": "HIGH",
+    "remediationGuidance": "Configure 'no ip http server' and 'ip http secure-server'.",
+    "sourceReference": "CIS Cisco IOS XE 17.x Benchmark v2.2.1 Section 1.1.3",
+    "sourceUrl": "https://www.cisecurity.org/cis-benchmarks",
+    "status": "ACTIVE",
+    "provenance": "Derived from CIS Benchmark Section 1.1.3 hardening recommendations",
+    "ruleIds": [
+      "RULE-MGMT-HTTP-OFF",
+      "RULE-MGMT-HTTPS-ON"
+    ]
+  },
+  {
+    "id": "cis-1-1-4",
+    "frameworkId": "FW-CIS",
+    "controlId": "1.1.4",
+    "controlCode": "1.1.4",
+    "title": "Ensure AAA subsystem is active",
+    "description": "Enables centralized AAA access control for user authentication and authorization.",
+    "family": "AUTHENTICATION",
+    "category": "AUTHENTICATION",
+    "version": "v2.2.1",
+    "severity": "HIGH",
+    "remediationGuidance": "Configure 'aaa new-model' in global configuration.",
+    "sourceReference": "CIS Cisco IOS XE 17.x Benchmark v2.2.1 Section 1.1.4",
+    "sourceUrl": "https://www.cisecurity.org/cis-benchmarks",
+    "status": "ACTIVE",
+    "provenance": "Derived from CIS Benchmark Section 1.1.4 hardening recommendations",
+    "ruleIds": [
+      "RULE-AUTH-AAA"
+    ]
+  },
+  {
+    "id": "cis-1-1-5",
+    "frameworkId": "FW-CIS",
+    "controlId": "1.1.5",
+    "controlCode": "1.1.5",
+    "title": "Ensure remote syslog logging is configured",
+    "description": "Ensures security-relevant audit records are sent to a dedicated remote syslog host.",
+    "family": "LOGGING",
+    "category": "LOGGING",
+    "version": "v2.2.1",
+    "severity": "MEDIUM",
+    "remediationGuidance": "Configure 'logging host <ip-address>'.",
+    "sourceReference": "CIS Cisco IOS XE 17.x Benchmark v2.2.1 Section 1.1.5",
+    "sourceUrl": "https://www.cisecurity.org/cis-benchmarks",
+    "status": "ACTIVE",
+    "provenance": "Derived from CIS Benchmark Section 1.1.5 hardening recommendations",
+    "ruleIds": [
+      "RULE-LOG-REMOTE"
+    ]
+  },
+  {
+    "id": "cis-1-1-6",
+    "frameworkId": "FW-CIS",
+    "controlId": "1.1.6",
+    "controlCode": "1.1.6",
+    "title": "Ensure SNMPv1/v2c are disabled",
+    "description": "Prohibits unencrypted community strings and weak legacy SNMP versions.",
+    "family": "MANAGEMENT_SERVICES",
+    "category": "MANAGEMENT_SERVICES",
+    "version": "v2.2.1",
+    "severity": "MEDIUM",
+    "remediationGuidance": "Remove legacy public/private community strings and implement SNMPv3.",
+    "sourceReference": "CIS Cisco IOS XE 17.x Benchmark v2.2.1 Section 1.1.6",
+    "sourceUrl": "https://www.cisecurity.org/cis-benchmarks",
+    "status": "ACTIVE",
+    "provenance": "Derived from CIS Benchmark Section 1.1.6 hardening recommendations",
+    "ruleIds": [
+      "RULE-SNMP-V1-OFF"
+    ]
+  },
+  {
+    "id": "cis-1-1-7",
+    "frameworkId": "FW-CIS",
+    "controlId": "1.1.7",
+    "controlCode": "1.1.7",
+    "title": "Ensure NTP is configured",
+    "description": "Synchronizes system time with reliable NTP time servers for audit integrity.",
+    "family": "SYSTEM_INTEGRITY",
+    "category": "SYSTEM_INTEGRITY",
+    "version": "v2.2.1",
+    "severity": "MEDIUM",
+    "remediationGuidance": "Configure 'ntp server <ip-address>'.",
+    "sourceReference": "CIS Cisco IOS XE 17.x Benchmark v2.2.1 Section 1.1.7",
+    "sourceUrl": "https://www.cisecurity.org/cis-benchmarks",
+    "status": "ACTIVE",
+    "provenance": "Derived from CIS Benchmark Section 1.1.7 hardening recommendations",
+    "ruleIds": [
+      "RULE-NTP-ENABLED"
+    ]
+  },
+  {
+    "id": "cis-1-1-8",
+    "frameworkId": "FW-CIS",
+    "controlId": "1.1.8",
+    "controlCode": "1.1.8",
+    "title": "Ensure warning banner is configured",
+    "description": "Presents a legally binding warning banner before interactive logon.",
+    "family": "SYSTEM_MANAGEMENT",
+    "category": "SYSTEM_MANAGEMENT",
+    "version": "v2.2.1",
+    "severity": "LOW",
+    "remediationGuidance": "Configure 'banner motd ^Authorized Access Only^'.",
+    "sourceReference": "CIS Cisco IOS XE 17.x Benchmark v2.2.1 Section 1.1.8",
+    "sourceUrl": "https://www.cisecurity.org/cis-benchmarks",
+    "status": "ACTIVE",
+    "provenance": "Derived from CIS Benchmark Section 1.1.8 hardening recommendations",
+    "ruleIds": [
+      "RULE-LOGIN-BANNER"
+    ]
+  },
+  {
+    "id": "iso-a-5-15",
+    "frameworkId": "FW-ISO-27001",
+    "controlId": "A.5.15",
+    "controlCode": "A.5.15",
+    "title": "Access control",
+    "description": "Rules to control physical and logical access to information and other associated assets shall be established and implemented.",
+    "family": "ORGANIZATIONAL_CONTROLS",
+    "category": "ORGANIZATIONAL_CONTROLS",
+    "version": "2022",
+    "severity": "HIGH",
+    "remediationGuidance": "Enforce strict user authentication and access authorization across network infrastructure.",
+    "sourceReference": "ISO/IEC 27001:2022 Annex A Control 5.15",
+    "sourceUrl": "https://www.iso.org/standard/27001.html",
+    "status": "ACTIVE",
+    "provenance": "ISO/IEC 27001:2022 Annex A standard reference control metadata",
+    "ruleIds": [
+      "RULE-AUTH-AAA",
+      "RULE-PASS-MIN-LEN"
+    ]
+  },
+  {
+    "id": "iso-a-8-15",
+    "frameworkId": "FW-ISO-27001",
+    "controlId": "A.8.15",
+    "controlCode": "A.8.15",
+    "title": "Logging",
+    "description": "Logs that record activities, exceptions, faults and other relevant events shall be produced, stored, protected and analysed.",
+    "family": "TECHNOLOGICAL_CONTROLS",
+    "category": "TECHNOLOGICAL_CONTROLS",
+    "version": "2022",
+    "severity": "MEDIUM",
+    "remediationGuidance": "Forward audit and security logs to centralized logging infrastructure.",
+    "sourceReference": "ISO/IEC 27001:2022 Annex A Control 8.15",
+    "sourceUrl": "https://www.iso.org/standard/27001.html",
+    "status": "ACTIVE",
+    "provenance": "ISO/IEC 27001:2022 Annex A standard reference control metadata",
+    "ruleIds": [
+      "RULE-LOG-REMOTE",
+      "RULE-NTP-ENABLED"
+    ]
+  },
+  {
+    "id": "iso-a-8-20",
+    "frameworkId": "FW-ISO-27001",
+    "controlId": "A.8.20",
+    "controlCode": "A.8.20",
+    "title": "Network security",
+    "description": "Networks and network devices shall be secured, managed and controlled to protect information in systems and applications.",
+    "family": "TECHNOLOGICAL_CONTROLS",
+    "category": "TECHNOLOGICAL_CONTROLS",
+    "version": "2022",
+    "severity": "HIGH",
+    "remediationGuidance": "Harden network management interfaces and mandate encrypted administrative access.",
+    "sourceReference": "ISO/IEC 27001:2022 Annex A Control 8.20",
+    "sourceUrl": "https://www.iso.org/standard/27001.html",
+    "status": "ACTIVE",
+    "provenance": "ISO/IEC 27001:2022 Annex A standard reference control metadata",
+    "ruleIds": [
+      "RULE-MGMT-SSH-V2",
+      "RULE-MGMT-TELNET-OFF",
+      "RULE-SNMP-V1-OFF"
+    ]
+  },
+  {
+    "id": "iso-a-8-24",
+    "frameworkId": "FW-ISO-27001",
+    "controlId": "A.8.24",
+    "controlCode": "A.8.24",
+    "title": "Use of cryptography",
+    "description": "Rules for the effective use of cryptography, including cryptographic key management, shall be defined and implemented.",
+    "family": "TECHNOLOGICAL_CONTROLS",
+    "category": "TECHNOLOGICAL_CONTROLS",
+    "version": "2022",
+    "severity": "HIGH",
+    "remediationGuidance": "Enforce strong ciphers and disable unencrypted management channels.",
+    "sourceReference": "ISO/IEC 27001:2022 Annex A Control 8.24",
+    "sourceUrl": "https://www.iso.org/standard/27001.html",
+    "status": "ACTIVE",
+    "provenance": "ISO/IEC 27001:2022 Annex A standard reference control metadata",
+    "ruleIds": [
+      "RULE-MGMT-SSH-V2",
+      "RULE-MGMT-HTTPS-ON"
+    ]
+  }
+]

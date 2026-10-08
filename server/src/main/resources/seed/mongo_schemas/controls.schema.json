@@ -1,0 +1,76 @@
+{
+  "$jsonSchema": {
+    "bsonType": "object",
+    "required": [
+      "frameworkId",
+      "controlId",
+      "title",
+      "family",
+      "sourceReference",
+      "status",
+      "provenance"
+    ],
+    "properties": {
+      "frameworkId": {
+        "bsonType": "string"
+      },
+      "controlId": {
+        "bsonType": "string"
+      },
+      "controlCode": {
+        "bsonType": [
+          "string",
+          "null"
+        ]
+      },
+      "title": {
+        "bsonType": "string"
+      },
+      "description": {
+        "bsonType": [
+          "string",
+          "null"
+        ]
+      },
+      "family": {
+        "bsonType": "string"
+      },
+      "category": {
+        "bsonType": [
+          "string",
+          "null"
+        ]
+      },
+      "version": {
+        "bsonType": [
+          "string",
+          "null"
+        ]
+      },
+      "severity": {
+        "bsonType": [
+          "string",
+          "null"
+        ]
+      },
+      "sourceReference": {
+        "bsonType": "string"
+      },
+      "sourceUrl": {
+        "bsonType": [
+          "string",
+          "null"
+        ]
+      },
+      "status": {
+        "bsonType": "string"
+      },
+      "provenance": {
+        "bsonType": "string"
+      },
+      "ruleIds": {
+        "bsonType": "array"
+      }
+    }
+  }
+}

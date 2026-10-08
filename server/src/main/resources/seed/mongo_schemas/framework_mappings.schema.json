@@ -1,0 +1,65 @@
+{
+  "$jsonSchema": {
+    "bsonType": "object",
+    "required": [
+      "sourceFramework",
+      "sourceControl",
+      "targetFramework",
+      "targetControl",
+      "mappingType",
+      "sourceReference",
+      "reviewStatus"
+    ],
+    "properties": {
+      "sourceFramework": {
+        "bsonType": "string"
+      },
+      "sourceControl": {
+        "bsonType": "string"
+      },
+      "targetFramework": {
+        "bsonType": "string"
+      },
+      "targetControl": {
+        "bsonType": "string"
+      },
+      "mappingType": {
+        "enum": [
+          "DIRECT",
+          "RELATED",
+          "PARTIAL",
+          "SUPPORTING_EVIDENCE"
+        ]
+      },
+      "mappingVersion": {
+        "bsonType": [
+          "string",
+          "null"
+        ]
+      },
+      "sourceReference": {
+        "bsonType": "string"
+      },
+      "reviewStatus": {
+        "enum": [
+          "PENDING",
+          "VALIDATED",
+          "REJECTED"
+        ]
+      },
+      "confidence": {
+        "bsonType": [
+          "double",
+          "int",
+          "null"
+        ]
+      },
+      "provenanceNotes": {
+        "bsonType": [
+          "string",
+          "null"
+        ]
+      }
+    }
+  }
+}

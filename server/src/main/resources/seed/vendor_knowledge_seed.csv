@@ -1,0 +1,47 @@
+id,vendor,platform,raw_syntax_pattern,canonical_field,canonical_value,source_note,source_version,source_reference
+VK-CISCO-AAA-001,Cisco,IOS-XE,aaa new-model,authentication.aaaEnabled,True,Enables global AAA subsystem on Cisco IOS and IOS XE devices.,17.9,Cisco IOS XE Security Configuration Guide: AAA
+VK-CISCO-AAA-002,Cisco,IOS-XE,aaa authentication login default group tacacs+,authentication.loginMethod,tacacs+,Directs default login authentication to configured TACACS+ server group.,17.9,Cisco IOS XE Security Configuration Guide: AAA
+VK-CISCO-SSH-001,Cisco,IOS-XE,ip ssh version 2,management.ssh.version,2,Restricts SSH daemon to SSH protocol version 2.,17.9,Cisco IOS XE Secure Shell Configuration Guide
+VK-CISCO-SSH-002,Cisco,IOS-XE,transport input ssh,management.ssh.enabled,True,Configured under line vty to permit SSH connections.,17.9,Cisco IOS XE Terminal Services Configuration Guide
+VK-CISCO-TELNET-001,Cisco,IOS-XE,transport input none,management.telnet.enabled,False,Disables all incoming remote access protocols including Telnet.,17.9,Cisco IOS XE Hardening Guide
+VK-CISCO-TELNET-002,Cisco,IOS-XE,transport input telnet,management.telnet.enabled,True,Indicates active Telnet protocol acceptance on VTY lines.,17.9,Cisco IOS XE Terminal Services Configuration Guide
+VK-CISCO-HTTP-001,Cisco,IOS-XE,no ip http server,management.http.enabled,False,Disables unencrypted embedded HTTP server.,17.9,Cisco IOS XE Network Management Guide: HTTP Services
+VK-CISCO-HTTP-002,Cisco,IOS-XE,ip http secure-server,management.https.enabled,True,Enables HTTPS TLS server for device web administration.,17.9,Cisco IOS XE Network Management Guide: HTTP Services
+VK-CISCO-LOG-001,Cisco,IOS-XE,logging host <ip-address>,logging.remoteSyslog.enabled,True,Designates remote syslog destination server IP address.,17.9,Cisco IOS XE System Message Logging Guide
+VK-CISCO-LOG-002,Cisco,IOS-XE,logging trap informational,logging.syslog.level,informational,Sets minimum syslog severity trap level to informational.,17.9,Cisco IOS XE System Message Logging Guide
+VK-CISCO-SNMP-001,Cisco,IOS-XE,no snmp-server community <community>,monitoring.snmp.v1Enabled,False,Removes legacy SNMP community strings.,17.9,Cisco IOS XE SNMP Configuration Guide
+VK-CISCO-SNMP-002,Cisco,IOS-XE,snmp-server community <community> RO,monitoring.snmp.v1Enabled,True,Enables legacy SNMPv1/v2c read-only community string.,17.9,Cisco IOS XE SNMP Configuration Guide
+VK-CISCO-NTP-001,Cisco,IOS-XE,ntp server <ip-address>,system.ntp.enabled,True,Configures authoritative NTP peer/server address.,17.9,Cisco IOS XE Basic System Management Guide
+VK-CISCO-BANNER-001,Cisco,IOS-XE,banner motd <delim><text><delim>,system.banner.configured,True,Configures message of the day banner displayed before user logon.,17.9,Cisco IOS XE Hardening Guide: Login Banners
+VK-CISCO-PW-001,Cisco,IOS-XE,security passwords min-length 14,authentication.password.minLength,14,Enforces minimum password length of 14 characters for local accounts.,17.9,Cisco IOS XE Security Configuration Guide: Passwords
+VK-JUNOS-SSH-001,Juniper,Junos,set system services ssh,management.ssh.enabled,True,Enables SSH remote access service daemon in Junos.,21.4,Juniper Junos OS Administration Guide: System Services
+VK-JUNOS-SSH-002,Juniper,Junos,set system services ssh protocol-version v2,management.ssh.version,2,Explicitly restricts SSH to protocol version 2 in Junos.,21.4,Juniper Junos OS Administration Guide: System Services
+VK-JUNOS-TELNET-001,Juniper,Junos,set system services telnet,management.telnet.enabled,True,Enables legacy Telnet remote access daemon.,21.4,Juniper Junos OS Administration Guide: Remote Access
+VK-JUNOS-TELNET-002,Juniper,Junos,delete system services telnet,management.telnet.enabled,False,Disables Telnet remote management daemon.,21.4,Juniper Junos OS Hardening Guide
+VK-JUNOS-HTTP-001,Juniper,Junos,set system services web-management http,management.http.enabled,True,Enables unencrypted J-Web HTTP server.,21.4,Juniper Junos OS Administration Guide: Web Management
+VK-JUNOS-HTTP-002,Juniper,Junos,set system services web-management https,management.https.enabled,True,Enables encrypted J-Web HTTPS server with TLS.,21.4,Juniper Junos OS Administration Guide: Web Management
+VK-JUNOS-AUTH-001,Juniper,Junos,set system authentication-order [ radius tacplus ],authentication.aaaEnabled,True,Enforces centralized authentication sequence via RADIUS and TACACS+.,21.4,Juniper Junos User Access and Authentication Guide
+VK-JUNOS-LOG-001,Juniper,Junos,set system syslog host <hostname> any notice,logging.remoteSyslog.enabled,True,Configures remote syslog host forwarding for notice severity events.,21.4,Juniper Junos System Logging Guide
+VK-JUNOS-SNMP-001,Juniper,Junos,set snmp community <name>,monitoring.snmp.v1Enabled,True,Enables legacy community string based SNMP access.,21.4,Juniper Junos SNMP Configuration Guide
+VK-JUNOS-NTP-001,Juniper,Junos,set system ntp server <address>,system.ntp.enabled,True,Configures authoritative NTP reference server.,21.4,Juniper Junos NTP Configuration Guide
+VK-JUNOS-BANNER-001,Juniper,Junos,set system login message <banner>,system.banner.configured,True,Configures advisory banner message displayed upon login connection.,21.4,Juniper Junos Hardening Guide: Login Message
+VK-FGT-SSH-001,Fortinet,FortiOS,set admin-ssh-v1 disable,management.ssh.sshV1Enabled,False,Disables legacy SSH protocol version 1 for administrative access.,7.4.2,FortiOS 7.4 CLI Reference: system global
+VK-FGT-SSH-002,Fortinet,FortiOS,set admin-ssh-v1 enable,management.ssh.sshV1Enabled,True,Permits insecure SSH version 1 connections.,7.4.2,FortiOS 7.4 CLI Reference: system global
+VK-FGT-TELNET-001,Fortinet,FortiOS,set admin-telnet disable,management.telnet.enabled,False,Disables global Telnet administrative access.,7.4.2,FortiOS 7.4 CLI Reference: system global
+VK-FGT-TELNET-002,Fortinet,FortiOS,set admin-telnet enable,management.telnet.enabled,True,Enables global Telnet administrative access on FortiGate.,7.4.2,FortiOS 7.4 CLI Reference: system global
+VK-FGT-HTTP-001,Fortinet,FortiOS,set admin-http disable,management.http.enabled,False,Disables cleartext HTTP administrative web interface.,7.4.2,FortiOS 7.4 CLI Reference: system global
+VK-FGT-HTTP-002,Fortinet,FortiOS,set admin-https-redirect enable,management.https.enabled,True,Forces HTTP redirection to HTTPS management.,7.4.2,FortiOS 7.4 Administration Guide: Administrator Access
+VK-FGT-SNMP-001,Fortinet,FortiOS,set query-v1-status disable,monitoring.snmp.v1Enabled,False,Disables SNMPv1 queries against FortiGate community.,7.4.2,FortiOS 7.4 SNMP Configuration Guide
+VK-FGT-SNMP-002,Fortinet,FortiOS,set query-v1-status enable,monitoring.snmp.v1Enabled,True,Enables legacy SNMPv1 queries on FortiGate.,7.4.2,FortiOS 7.4 SNMP Configuration Guide
+VK-FGT-LOG-001,Fortinet,FortiOS,config log syslogd setting ... set status enable,logging.remoteSyslog.enabled,True,Enables remote syslog daemon forwarding on FortiOS.,7.4.2,FortiOS 7.4 Log Message Reference
+VK-FGT-NTP-001,Fortinet,FortiOS,config system ntp ... set status enable,system.ntp.enabled,True,Enables network time protocol synchronization on FortiGate.,7.4.2,FortiOS 7.4 System Administration Guide
+VK-FGT-BANNER-001,Fortinet,FortiOS,set pre-login-banner enable,system.banner.configured,True,Enables pre-login warning disclaimer message on administrative interfaces.,7.4.2,FortiOS 7.4 Hardening Guide: Warning Banners
+VK-PA-MGMT-001,Palo Alto,PAN-OS,interface-management-profile ssh,management.ssh.enabled,True,Permits SSH protocol on assigned interface management profile.,11.1,PAN-OS 11.1 Administrator's Guide: Interface Management
+VK-PA-MGMT-002,Palo Alto,PAN-OS,interface-management-profile telnet,management.telnet.enabled,True,Permits unencrypted Telnet on interface management profile.,11.1,PAN-OS 11.1 Administrator's Guide: Interface Management
+VK-PA-MGMT-003,Palo Alto,PAN-OS,interface-management-profile http,management.http.enabled,True,Permits cleartext HTTP on interface management profile.,11.1,PAN-OS 11.1 Administrator's Guide: Interface Management
+VK-PA-MGMT-004,Palo Alto,PAN-OS,interface-management-profile https,management.https.enabled,True,Permits encrypted HTTPS on interface management profile.,11.1,PAN-OS 11.1 Administrator's Guide: Interface Management
+VK-PA-LOG-001,Palo Alto,PAN-OS,Syslog Server Profile,logging.remoteSyslog.enabled,True,Configures external syslog server profile for firewall log forwarding.,11.1,PAN-OS 11.1 Logging and Reporting Guide: Syslog Profiles
+VK-PA-POL-001,Palo Alto,PAN-OS,security policy rule,firewall.securityPolicy.enabled,True,Defines stateful security policy rule matching traffic.,11.1,PAN-OS 11.1 Security Policy Guide
+VK-PA-POL-002,Palo Alto,PAN-OS,set rulebase security rules <rule> log-end yes,logging.securityPolicy.logEnd,True,Ensures traffic session completion is logged to audit trail.,11.1,PAN-OS 11.1 Security Policy Guide: Rule Logging
+VK-PA-NTP-001,Palo Alto,PAN-OS,set deviceconfig system ntp-server primary <address>,system.ntp.enabled,True,Configures primary NTP time server synchronization in PAN-OS.,11.1,PAN-OS 11.1 Administrator's Guide: System Time
+VK-PA-BANNER-001,Palo Alto,PAN-OS,set deviceconfig system login-banner <message>,system.banner.configured,True,Sets administrative warning banner shown upon web/SSH login.,11.1,PAN-OS 11.1 Hardening Guide: Login Banner

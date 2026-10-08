@@ -1,0 +1,16 @@
+{
+  "id": "REL-2.1.0-SIH26155",
+  "datasetVersion": "2.1.0-SIH26155",
+  "releaseDate": "2026-10-07",
+  "sourceManifestHash": "7c0aeddfa101727d515e06e3c4c12d6d2635206cff4fb8127b4c8c78c2001cee",
+  "importedAt": "2026-10-07T01:58:25.859003Z",
+  "sourceCount": 8,
+  "frameworkCount": 8,
+  "controlCount": 34,
+  "ruleCount": 10,
+  "vendorKnowledgeCount": 46,
+  "frameworkMappingCount": 18,
+  "evaluationCaseCount": 14,
+  "status": "VALIDATED",
+  "notes": "Dataset phase completion with authoritative versioning, provenances, real configuration fixtures, and validated cross-framework mappings."
+}

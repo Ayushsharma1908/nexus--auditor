@@ -1,0 +1,59 @@
+{
+  "$jsonSchema": {
+    "bsonType": "object",
+    "required": [
+      "canonicalField",
+      "operator",
+      "expectedValue",
+      "severity",
+      "status",
+      "ruleVersion",
+      "provenance"
+    ],
+    "properties": {
+      "canonicalField": {
+        "bsonType": "string"
+      },
+      "operator": {
+        "bsonType": "string"
+      },
+      "expectedValue": {},
+      "expectedType": {
+        "bsonType": [
+          "string",
+          "null"
+        ]
+      },
+      "severity": {
+        "bsonType": "string"
+      },
+      "status": {
+        "bsonType": "string"
+      },
+      "sourceType": {
+        "bsonType": "string"
+      },
+      "ruleVersion": {
+        "bsonType": "string"
+      },
+      "controlId": {
+        "bsonType": [
+          "string",
+          "null"
+        ]
+      },
+      "frameworkId": {
+        "bsonType": [
+          "string",
+          "null"
+        ]
+      },
+      "provenance": {
+        "bsonType": "string"
+      },
+      "unknownHandling": {
+        "bsonType": "string"
+      }
+    }
+  }
+}

@@ -1,0 +1,11 @@
+id,canonical_field,operator,expected_value,severity,rule_intent,controlId,ruleVersion,provenance
+RULE-MGMT-SSH-V2,management.ssh.version,EQUALS,2,HIGH,SSH should use version 2 where supported,1.1.1,1.0.0,"Derived from CIS Benchmark 1.1.1, NIST AC-17, and DISA STIG NET-0400"
+RULE-MGMT-TELNET-OFF,management.telnet.enabled,EQUALS,False,HIGH,Telnet should be disabled,1.1.2,1.0.0,"Derived from CIS Benchmark 1.1.2, NIST CM-7, and DISA STIG NET-0410"
+RULE-MGMT-HTTP-OFF,management.http.enabled,EQUALS,False,HIGH,Unencrypted management HTTP should be disabled where HTTPS is available,1.1.3,1.0.0,"Derived from CIS Benchmark 1.1.3, NIST SC-8, and DISA STIG NET-0420"
+RULE-AUTH-AAA,authentication.aaaEnabled,EQUALS,True,HIGH,Centralized AAA should be enabled where applicable,1.1.4,1.0.0,"Derived from NIST IA-2, CIS Benchmark 1.1.4, and DISA STIG NET-0500"
+RULE-LOG-REMOTE,logging.remoteSyslog.enabled,EQUALS,True,MEDIUM,Security-relevant logging should be forwarded to a remote collector where required,1.1.5,1.0.0,"Derived from NIST AU-12, CIS Benchmark 1.1.5, and DISA STIG NET-0600"
+RULE-SNMP-V1-OFF,monitoring.snmp.v1Enabled,EQUALS,False,MEDIUM,SNMPv1 should be disabled where secure alternatives are available,1.1.6,1.0.0,"Derived from CIS Benchmark 1.1.6, NIST CM-7, and DISA STIG NET-0700"
+RULE-NTP-ENABLED,system.ntp.enabled,EQUALS,True,MEDIUM,NTP time synchronization should be enabled to authoritative time sources,AU-8,1.0.0,Derived from NIST AU-8 and DISA STIG NET-0800
+RULE-LOGIN-BANNER,system.banner.configured,EQUALS,True,LOW,Authorized access advisory banner must be presented before interactive login,AC-8,1.0.0,Derived from NIST AC-8 and DISA STIG NET-0900
+RULE-MGMT-HTTPS-ON,management.https.enabled,EQUALS,True,MEDIUM,HTTPS must be enabled when web management interface is present,SC-8,1.0.0,Derived from NIST SC-8 and ISO 27001 A.8.24
+RULE-PASS-MIN-LEN,authentication.password.minLength,GTE,14,MEDIUM,Password minimum length must be at least 14 characters,IA-5,1.0.0,Derived from NIST IA-5 and DoD Password Guidelines

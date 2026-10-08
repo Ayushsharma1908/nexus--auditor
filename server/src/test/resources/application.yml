@@ -1,0 +1,20 @@
+context:
+  initializer:
+    classes: com.nexuscomply.MongoTestInitializer
+
+spring:
+  application:
+    name: nexus-comply-server-test
+  data:
+    mongodb:
+      auto-index-creation: true
+
+nexus:
+  ai:
+    provider: stub
+
+gemini:
+  api:
+    key: test-gemini-key
+    model: gemini-2.5-flash
+    timeout-seconds: 10

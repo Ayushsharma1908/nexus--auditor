@@ -1,0 +1,60 @@
+{
+  "$jsonSchema": {
+    "bsonType": "object",
+    "required": [
+      "vendor",
+      "platform",
+      "rawSyntaxPattern",
+      "canonicalField",
+      "sourceReference"
+    ],
+    "properties": {
+      "vendor": {
+        "bsonType": "string"
+      },
+      "platform": {
+        "bsonType": "string"
+      },
+      "platformVersionRange": {
+        "bsonType": [
+          "string",
+          "null"
+        ]
+      },
+      "rawSyntaxPattern": {
+        "bsonType": "string"
+      },
+      "canonicalField": {
+        "bsonType": "string"
+      },
+      "canonicalValue": {},
+      "canonicalType": {
+        "bsonType": [
+          "string",
+          "null"
+        ]
+      },
+      "sourceReference": {
+        "bsonType": "string"
+      },
+      "sourceVersion": {
+        "bsonType": [
+          "string",
+          "null"
+        ]
+      },
+      "validationStatus": {
+        "bsonType": [
+          "string",
+          "null"
+        ]
+      },
+      "applicabilityNotes": {
+        "bsonType": [
+          "string",
+          "null"
+        ]
+      }
+    }
+  }
+}
